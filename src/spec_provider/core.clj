@@ -2,20 +2,28 @@
   (:require [clojure.spec :as s]
             [clojure.spec.gen :as gen]))
 
+;;this means that if the count of the distinct values is less than 10%
+;;of the count of total values, then the attribute is considered an
+;;enumeration
+(def enum-threshold 0.1)
+
 (def preds
   [string?
    float?
-   integer?])
+   integer?
+   keyword?])
 
 (def pred->form
   {string?  'string?
    float?   'float?
-   integer? 'integer?})
+   integer? 'integer?
+   keyword? 'keyword?})
 
 (def pred->name
   {string?  :string
    float?   :float
-   integer? :integer})
+   integer? :integer
+   keyword? :keyword})
 
 (defn- safe-inc [x] (if x (inc x) 1))
 (defn- safe-set-conj [s x] (if s (conj s x) #{x}))
@@ -37,8 +45,14 @@
    stats map))
 
 (defn summarize-attr-value [{types :types
-                             distinct-values :distinct}]
-  (cond (= 1 (count types))
+                             distinct-values :distinct
+                             value-count :count}]
+  (cond (> enum-threshold
+           (/ (float (count distinct-values))
+              (float value-count)))
+        distinct-values
+
+        (= 1 (count types))
         (pred->form (ffirst types))
 
         (> (count types) 1)
@@ -81,30 +95,36 @@
 (s/def ::id (s/or :numeric (s/and integer? pos?) :string string?))
 (s/def ::first-name string?)
 (s/def ::surname string?)
+(s/def ::k keyword?)
 (s/def ::age (s/and integer? pos?))
+(s/def ::role #{:programmer :designer})
 (s/def ::phone-number string?)
 (s/def ::person
-  (s/keys :req-un [::id ::first-name ::surname ::age]
+  (s/keys :req-un [::id ::first-name ::surname ::k ::age ::role]
           :opt-un [::phone-number]))
 
 ;;(s/form (s/or :numeric (s/and integer? pos?) :string string?))
 
 (comment
-  > (derive-spec (gen/sample (s/gen ::person) 100))
+  > (pprint (derive-spec (gen/sample (s/gen ::person) 100)))
 
   ;;produces:
   ((clojure.spec/def
      :spec-provider.core/id
-     (clojure.spec/or :integer integer? :string string?))
+     (clojure.spec/or :string string? :integer integer?))
    (clojure.spec/def :spec-provider.core/first-name string?)
    (clojure.spec/def :spec-provider.core/surname string?)
+   (clojure.spec/def :spec-provider.core/k keyword?)
    (clojure.spec/def :spec-provider.core/age integer?)
+   (clojure.spec/def :spec-provider.core/role #{:programmer :designer})
    (clojure.spec/def :spec-provider.core/phone-number string?)
    (clojure.spec/keys
     :un-req
     [:spec-provider.core/id
      :spec-provider.core/first-name
      :spec-provider.core/surname
-     :spec-provider.core/age]
+     :spec-provider.core/k
+     :spec-provider.core/age
+     :spec-provider.core/role]
     :un-opt
     [:spec-provider.core/phone-number])))
