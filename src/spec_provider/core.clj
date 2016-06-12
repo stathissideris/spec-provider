@@ -91,6 +91,14 @@
                (list `s/def (qualify-key k) (summarize-attr-value v)))
              stats)
             [(summarize-keys stats)])))
+;;derive-spec for nested maps algo:
+;; 0. assign names to all nested maps based on the key
+;;    they're under
+;; 1. collect all nested maps stats. Also, root map (if map)
+;; 2. collect all attribute stats from all maps
+;; 3. (maybe) merge the attribute stats of the ones that have the same name
+;; 4. derive spec for each attribute
+;; 5. derive spec for each map keyset
 
 (s/def ::id (s/or :numeric pos-long? :string string?))
 (s/def ::first-name string?)
