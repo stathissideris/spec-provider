@@ -11,7 +11,11 @@
   [string?
    float?
    integer?
-   keyword?])
+   keyword?
+   boolean?
+   sequential?
+   set?
+   map?])
 
 (def pred->form
   {string?  'string?
@@ -24,6 +28,25 @@
    float?   :float
    integer? :integer
    keyword? :keyword})
+
+(s/def ::type keyword?)
+
+(s/def ::pred-counts (s/map-of ::s/any pos-long?))
+(s/def ::distinct-values (s/* ::s/any))
+(s/def ::count pos-long?)
+
+(s/def ::attribute-stats (or (s/keys :req [::pred-counts ::distinct-values ::count])
+                             (s/keys :req [::nested-map])))
+(s/def ::name string?)
+(s/def ::attributes (s/map-of ::s/any ::attribute-stats))
+
+(s/def ::map-stats
+  (s/and
+   (s/keys :req [::type ::attributes]
+           :opt [::name])
+   #(= ::map (::type %))))
+
+(s/def ::stats (s/* ::map-stats))
 
 (defn- safe-inc [x] (if x (inc x) 1))
 (defn- safe-set-conj [s x] (if s (conj s x) #{x}))
@@ -38,27 +61,30 @@
 (defn assimilate-map [stats map]
   (reduce
    (fn [stats [k v]]
-     (-> stats
-         (update-in [k :types] assimilate-attr-types v)
-         (update-in [k :distinct] safe-set-conj v)
-         (update-in [k :count] safe-inc)))
+     (if (map? v)
+       (update-in stats [::attributes k ::nested-map] assimilate-map v)
+       (-> stats
+           (assoc ::type ::map)
+           (update-in [::attributes k ::pred-counts] assimilate-attr-types v)
+           (update-in [::attributes k ::distinct] safe-set-conj v)
+           (update-in [::attributes k ::count] safe-inc))))
    stats map))
 
-(defn summarize-attr-value [{types :types
-                             distinct-values :distinct
-                             value-count :count}]
+(defn summarize-attr-value [{pred-counts ::pred-counts
+                             distinct-values :distinct-values
+                             value-count ::count}]
   (cond (> enum-threshold
            (/ (float (count distinct-values))
               (float value-count)))
         distinct-values
 
-        (= 1 (count types))
-        (pred->form (ffirst types))
+        (= 1 (count pred-counts))
+        (pred->form (ffirst pred-counts))
 
-        (> (count types) 1)
+        (> (count pred-counts) 1)
         (concat
          (list 'clojure.spec/or)
-         (mapcat (juxt pred->name pred->form) (map first types)))))
+         (mapcat (juxt pred->name pred->form) (map first pred-counts)))))
 
 (defn- qualified-key? [k] (some? (namespace k)))
 (defn- qualify-key [k] (keyword (str *ns*) (name k))) ;;TODO we need to pass ns as a param
@@ -90,7 +116,8 @@
              (fn [[k v]]
                (list `s/def (qualify-key k) (summarize-attr-value v)))
              stats)
-            [(summarize-keys stats)])))
+            (list `s/def ::map1 (summarize-keys stats)))))
+
 ;;derive-spec for nested maps algo:
 ;; 0. assign names to all nested maps based on the key
 ;;    they're under
