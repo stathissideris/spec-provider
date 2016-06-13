@@ -7,16 +7,6 @@
 ;;enumeration
 (def enum-threshold 0.1)
 
-(def preds
-  [string?
-   float?
-   integer?
-   keyword?
-   boolean?
-   sequential?
-   set?
-   map?])
-
 (def pred->form
   {string?  'string?
    float?   'float?
@@ -28,47 +18,6 @@
    float?   :float
    integer? :integer
    keyword? :keyword})
-
-(s/def ::type keyword?)
-
-(s/def ::pred-counts (s/map-of ::s/any pos-long?))
-(s/def ::distinct-values (s/* ::s/any))
-(s/def ::count pos-long?)
-
-(s/def ::attribute-stats (or (s/keys :req [::pred-counts ::distinct-values ::count])
-                             (s/keys :req [::nested-map])))
-(s/def ::name string?)
-(s/def ::attributes (s/map-of ::s/any ::attribute-stats))
-
-(s/def ::map-stats
-  (s/and
-   (s/keys :req [::type ::attributes]
-           :opt [::name])
-   #(= ::map (::type %))))
-
-(s/def ::stats (s/* ::map-stats))
-
-(defn- safe-inc [x] (if x (inc x) 1))
-(defn- safe-set-conj [s x] (if s (conj s x) #{x}))
-
-(defn assimilate-attr-types [stats v]
-  (reduce
-   (fn [stats pred]
-     (if (pred v)
-       (update stats pred safe-inc)
-       stats)) stats preds))
-
-(defn assimilate-map [stats map]
-  (reduce
-   (fn [stats [k v]]
-     (if (map? v)
-       (update-in stats [::attributes k ::nested-map] assimilate-map v)
-       (-> stats
-           (assoc ::type ::map)
-           (update-in [::attributes k ::pred-counts] assimilate-attr-types v)
-           (update-in [::attributes k ::distinct] safe-set-conj v)
-           (update-in [::attributes k ::count] safe-inc))))
-   stats map))
 
 (defn summarize-attr-value [{pred-counts ::pred-counts
                              distinct-values :distinct-values
@@ -126,27 +75,6 @@
 ;; 3. (maybe) merge the attribute stats of the ones that have the same name
 ;; 4. derive spec for each attribute
 ;; 5. derive spec for each map keyset
-
-(s/def ::id (s/or :numeric pos-long? :string string?))
-(s/def ::first-name string?)
-(s/def ::surname string?)
-(s/def ::k keyword?)
-(s/def ::age (s/and integer? pos?))
-(s/def ::role #{:programmer :designer})
-(s/def ::phone-number string?)
-
-(s/def ::street string?)
-(s/def ::city string?)
-(s/def ::country string?)
-(s/def ::street-number pos-long?)
-
-(s/def ::address
-  (s/keys :req-un [::street ::city ::country]
-          :opt-un [::street-number]))
-
-(s/def ::person
-  (s/keys :req-un [::id ::first-name ::surname ::k ::age ::role ::address]
-          :opt-un [::phone-number]))
 
 ;;(s/form (s/or :numeric (s/and integer? pos?) :string string?))
 
