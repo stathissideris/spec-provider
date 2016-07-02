@@ -2,10 +2,12 @@
   (:require [clojure.spec :as s]
             [clojure.spec.gen :as gen]))
 
-(def distinct-limit 10)
+(def ^:dynamic *distinct-limit* 10)
+(def ^:dynamic *coll-limit* 101)
 
 (def preds
   [string?
+   double?
    float?
    integer?
    keyword?
@@ -15,10 +17,10 @@
    map?])
 
 (s/def ::distinct-values (s/* ::s/any))
-(s/def ::count pos-long?)
+(s/def ::sample-count pos-int?)
 (s/def ::pred-stats
   (s/keys
-   :req [::count]
+   :req [::sample-count]
    :opt [::min ::max ::min-length ::max-length]))
 (s/def ::pred-map (s/map-of ::s/any ::pred-stats))
 (s/def ::name string?)
@@ -28,7 +30,7 @@
 
 (s/def ::stats
   (s/keys
-   :req [::distinct-values ::count ::pred-map]
+   :req [::sample-count ::pred-map ::distinct-values ::hit-distinct-values-limit]
    :opt [::name ::keys ::elements]))
 
 
@@ -37,7 +39,7 @@
 (s/fdef safe-set-conj :args (s/cat :set set? :value ::s/any))
 
 (defn update-pred-stats [pred-stats x]
-  (let [s (update pred-stats ::count safe-inc)
+  (let [s (update pred-stats ::sample-count safe-inc)
         number (number? x)
         counted (or (counted? x) (string? x))
         c (when counted (count x))]
@@ -73,21 +75,33 @@
         :args (s/cat :keys ::keys :value ::s/any)
         :ret ::keys)
 
+(defn update-elements-stats [elements-stats x]
+  (if-not (sequential? x)
+    elements-stats
+    (reduce
+     (fn [stats element]
+       (update-stats stats element))
+     elements-stats (take *coll-limit* x))))
+
 (defn empty-stats []
   {::distinct-values #{}
-   ::count 0
+   ::sample-count 0
    ::pred-map {}})
 (s/fdef empty-stats :ret ::stats)
 
 (defn update-stats [stats x]
   (-> (or stats (empty-stats))
-      (update ::count safe-inc)
+      (update ::sample-count safe-inc)
       (update ::pred-map update-pred-map x)
       (cond->
           (map? x)
-            (update ::keys update-keys-stats x) ;;TODO ::elements
-          (and (not (coll? x)) (-> stats ::distinct-values count (< distinct-limit)))
-            (update ::distinct-values safe-set-conj x))))
+            (update ::keys update-keys-stats x)
+          (sequential? x)
+            (update ::elements update-elements-stats x)
+          (and (not (coll? x)) (-> stats ::distinct-values count (< *distinct-limit*))) ;;TODO optimize
+            (update ::distinct-values safe-set-conj x)
+          (and (not (coll? x)) (-> stats ::distinct-values count (>= *distinct-limit*)))
+            (assoc ::hit-distinct-values-limit true))))
 (s/fdef update-stats
         :args (s/cat :stats (s/nilable ::stats) :value ::s/any)
         :ret ::stats)
@@ -95,6 +109,7 @@
 
 (comment
   (require '[spec-provider.person-spec :as p]
+           '[spec-provider.core :refer [derive-spec]]
            '[clojure.pprint :refer [pprint]])
   (pprint (reduce update-stats nil (gen/sample (s/gen ::p/person) 100)))
 
