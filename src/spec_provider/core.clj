@@ -48,14 +48,14 @@
          (mapcat (juxt pred->name pred->form) (map first pred-map)))))
 
 (defn- qualified-key? [k] (some? (namespace k)))
-(defn- qualify-key [k] (keyword (str *ns*) (name k))) ;;TODO we need to pass ns as a param
+(defn- qualify-key [k ns] (keyword (str ns) (name k)))
 
-(defn summarize-keys [keys-stats]
+(defn summarize-keys [keys-stats ns]
   (let [highest-freq (apply max (map ::st/sample-count (vals keys-stats)))
         extract-keys (fn [filter-fn]
                        (->> keys-stats
                             (filter filter-fn)
-                            (mapv (comp qualify-key key))
+                            (mapv #(qualify-key (key %) ns))
                             not-empty))
         req          (extract-keys
                       (fn [[k v]] (and (qualified-key? k) (= (::st/sample-count v) highest-freq))))
@@ -84,17 +84,18 @@
                          keys-stats ::st/keys
                          elements-stats ::st/elements
                          :as stats}
-                        spec-name]
+                        spec-name
+                        spec-ns]
   (list `s/def spec-name
         (cond (and keys-stats elements-stats)
               (list `s/or
                     :map
-                    (summarize-keys keys-stats)
+                    (summarize-keys keys-stats spec-ns)
                     :collection
                     (summarize-elements elements-stats))
 
               keys-stats
-              (summarize-keys keys-stats)
+              (summarize-keys keys-stats spec-ns)
 
               elements-stats
               (summarize-elements elements-stats)
@@ -114,7 +115,7 @@
                                      [spec-name stats]))]
     ;;merge stats for keys that appear twice in flat-stats
     (map (fn [[stat-name stats]]
-           (summarize-stats* stats (keyword spec-ns (name stat-name))))
+           (summarize-stats* stats (keyword spec-ns (name stat-name)) spec-ns))
          flat-stats)))
 
 (defn derive-spec [data spec-name]

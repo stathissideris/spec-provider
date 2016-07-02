@@ -46,11 +46,9 @@
      :person/address
      (clojure.spec/keys
       :un-req
-      [:spec-provider.person-spec/street
-       :spec-provider.person-spec/city
-       :spec-provider.person-spec/country]
+      [:person/street :person/city :person/country]
       :un-opt
-      [:spec-provider.person-spec/street-number]))
+      [:person/street-number]))
    (clojure.spec/def :person/role #{:programmer :designer})
    (clojure.spec/def :person/age integer?)
    (clojure.spec/def :person/k keyword?)
@@ -63,12 +61,13 @@
      :person/person
      (clojure.spec/keys
       :un-req
-      [:spec-provider.person-spec/id
-       :spec-provider.person-spec/first-name
-       :spec-provider.person-spec/surname
-       :spec-provider.person-spec/k
-       :spec-provider.person-spec/age
-       :spec-provider.person-spec/role
-       :spec-provider.person-spec/address]
+      [:person/id
+       :person/first-name
+       :person/surname
+       :person/k
+       :person/age
+       :person/role
+       :person/address]
       :un-opt
-      [:spec-provider.person-spec/phone-number]))))
+      [:person/phone-number])))
+
