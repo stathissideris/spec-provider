@@ -102,17 +102,23 @@
               :else
               (summarize-leaf stats))))
 
-(defn summarize-stats [stats]
-  (let [flat-stats (reduce (fn [flat node]
-                             (if (::st/pred-map node)
-                               (cons node flat)
+(defn summarize-stats [stats spec-name]
+  (let [spec-ns    (namespace spec-name)
+        flat-stats (reduce (fn [flat [stat-name stats :as node]]
+                             (if (::st/pred-map stats)
+                               (cons [stat-name stats] flat)
                                flat))
                            nil
-                           (tree-seq ::st/keys (comp vals ::st/keys) stats))]
-    (map #(summarize-stats* % ::root) flat-stats)))
+                           (tree-seq (comp ::st/keys second)
+                                     (comp ::st/keys second)
+                                     [spec-name stats]))]
+    ;;merge stats for keys that appear twice in flat-stats
+    (map (fn [[stat-name stats]]
+           (summarize-stats* stats (keyword spec-ns (name stat-name))))
+         flat-stats)))
 
-(defn derive-spec [data]
-  (summarize-stats (reduce st/update-stats {} data)))
+(defn derive-spec [data spec-name]
+  (summarize-stats (reduce st/update-stats {} data) spec-name))
 
 ;;derive-spec for nested maps algo:
 ;; 0. assign names to all nested maps based on the key

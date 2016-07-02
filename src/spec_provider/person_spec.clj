@@ -34,25 +34,41 @@
 
 
   > (pprint (reduce stats/update-stats nil (gen/sample (s/gen ::person) 100)))
-  > (pprint (provider/derive-spec (gen/sample (s/gen ::person) 100)))
+  > (pprint (provider/derive-spec (gen/sample (s/gen ::person) 100) :person/person))
 
   ;;produces:
-  ((clojure.spec/def
-     :spec-provider.core/id
-     (clojure.spec/or :string string? :integer integer?))
-   (clojure.spec/def :spec-provider.core/first-name string?)
-   (clojure.spec/def :spec-provider.core/surname string?)
-   (clojure.spec/def :spec-provider.core/k keyword?)
-   (clojure.spec/def :spec-provider.core/age integer?)
-   (clojure.spec/def :spec-provider.core/role #{:programmer :designer})
-   (clojure.spec/def :spec-provider.core/phone-number string?)
-   (clojure.spec/keys
-    :un-req
-    [:spec-provider.core/id
-     :spec-provider.core/first-name
-     :spec-provider.core/surname
-     :spec-provider.core/k
-     :spec-provider.core/age
-     :spec-provider.core/role]
-    :un-opt
-    [:spec-provider.core/phone-number])))
+  ((clojure.spec/def :person/phone-number string?)
+   (clojure.spec/def :person/street-number integer?)
+   (clojure.spec/def :person/country string?)
+   (clojure.spec/def :person/city string?)
+   (clojure.spec/def :person/street string?)
+   (clojure.spec/def
+     :person/address
+     (clojure.spec/keys
+      :un-req
+      [:spec-provider.person-spec/street
+       :spec-provider.person-spec/city
+       :spec-provider.person-spec/country]
+      :un-opt
+      [:spec-provider.person-spec/street-number]))
+   (clojure.spec/def :person/role #{:programmer :designer})
+   (clojure.spec/def :person/age integer?)
+   (clojure.spec/def :person/k keyword?)
+   (clojure.spec/def :person/surname string?)
+   (clojure.spec/def :person/first-name string?)
+   (clojure.spec/def
+     :person/id
+     (clojure.spec/or :integer integer? :string string?))
+   (clojure.spec/def
+     :person/person
+     (clojure.spec/keys
+      :un-req
+      [:spec-provider.person-spec/id
+       :spec-provider.person-spec/first-name
+       :spec-provider.person-spec/surname
+       :spec-provider.person-spec/k
+       :spec-provider.person-spec/age
+       :spec-provider.person-spec/role
+       :spec-provider.person-spec/address]
+      :un-opt
+      [:spec-provider.person-spec/phone-number]))))
