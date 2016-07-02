@@ -35,6 +35,9 @@
 
   > (pprint (reduce stats/update-stats nil (gen/sample (s/gen ::person) 100)))
   > (pprint (provider/derive-spec (gen/sample (s/gen ::person) 100) :person/person))
+  > (pprint
+     (provider/prettify-spec
+      (provider/derive-spec (gen/sample (s/gen ::person) 100) :person/person)))
 
   ;;produces:
   ((clojure.spec/def :person/phone-number string?)
@@ -71,3 +74,35 @@
       :un-opt
       [:person/phone-number])))
 
+  ;;or prettier:
+
+  > (pprint
+     (provider/unqualify-specs
+      (provider/derive-spec (gen/sample (s/gen ::person) 100) :person/person)
+      'person 's))
+
+  ((s/def ::phone-number string?)
+   (s/def ::street-number integer?)
+   (s/def ::country string?)
+   (s/def ::city string?)
+   (s/def ::street string?)
+   (s/def
+     ::address
+     (s/keys
+      :un-req
+      [::street ::city ::country]
+      :un-opt
+      [::street-number]))
+   (s/def ::role #{:programmer :designer})
+   (s/def ::age integer?)
+   (s/def ::k keyword?)
+   (s/def ::surname string?)
+   (s/def ::first-name string?)
+   (s/def ::id (s/or :integer integer? :string string?))
+   (s/def
+     ::person
+     (s/keys
+      :un-req
+      [::id ::first-name ::surname ::k ::age ::role ::address]
+      :un-opt
+      [::phone-number]))))

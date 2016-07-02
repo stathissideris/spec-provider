@@ -2,7 +2,8 @@
   (:require [clojure.spec :as s]
             [clojure.spec.gen :as gen]
             [clojure.spec.test]
-            [spec-provider.stats :as st]))
+            [spec-provider.stats :as st]
+            [clojure.walk :as walk]))
 
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an
@@ -120,6 +121,19 @@
 
 (defn derive-spec [data spec-name]
   (summarize-stats (reduce st/update-stats {} data) spec-name))
+
+(defn unqualify-spec [spec domain-ns clojure-spec-ns]
+  (let [domain-ns (str domain-ns)
+        clojure-spec-ns (str clojure-spec-ns)]
+    (walk/postwalk
+     (fn [x]
+       (cond (and (symbol? x) (= "clojure.spec" (namespace x))) (symbol clojure-spec-ns (name x))
+             (and (keyword? x) (= domain-ns (namespace x))) (symbol (str "::" (name x))) ;;nasty hack to get the printer to print ::foo
+             :else x))
+     spec)))
+
+(defn unqualify-specs [specs domain-ns clojure-spec-ns]
+  (map #(unqualify-spec % domain-ns clojure-spec-ns) specs))
 
 ;;derive-spec for nested maps algo:
 ;; 0. assign names to all nested maps based on the key
