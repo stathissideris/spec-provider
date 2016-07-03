@@ -105,12 +105,3 @@
 (s/fdef update-stats
         :args (s/cat :stats (s/nilable ::stats) :value ::s/any)
         :ret ::stats)
-
-
-(comment
-  (require '[spec-provider.person-spec :as p]
-           '[spec-provider.core :refer [derive-spec]]
-           '[clojure.pprint :refer [pprint]])
-  (pprint (reduce update-stats nil (gen/sample (s/gen ::p/person) 100)))
-
-  (pprint (derive-spec (gen/sample (s/gen ::p/person) 100))))

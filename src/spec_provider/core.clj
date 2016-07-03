@@ -3,7 +3,8 @@
             [clojure.spec.gen :as gen]
             [clojure.spec.test]
             [spec-provider.stats :as st]
-            [clojure.walk :as walk]))
+            [clojure.walk :as walk]
+            [clojure.pprint :refer [pprint]]))
 
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an
@@ -79,7 +80,7 @@
   (concat (list `s/or)
           (interleave
            (map (fn [[pred _]] (pred->name pred)) stats)
-           (map (fn [[pred stats]] (summarize-single-value pred stats)) stats))))
+           (map (fn [[pred stats]] (summarize-leaf pred stats)) stats))))
 
 (defn summarize-stats* [{pred-map ::st/pred-map
                          keys-stats ::st/keys
@@ -132,8 +133,9 @@
              :else x))
      spec)))
 
-(defn unqualify-specs [specs domain-ns clojure-spec-ns]
-  (map #(unqualify-spec % domain-ns clojure-spec-ns) specs))
+(defn pprint-specs [specs domain-ns clojure-spec-ns]
+  (doseq [spec (map #(unqualify-spec % domain-ns clojure-spec-ns) specs)]
+    (pprint spec)))
 
 ;;derive-spec for nested maps algo:
 ;; 0. assign names to all nested maps based on the key
