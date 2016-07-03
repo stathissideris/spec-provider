@@ -1,4 +1,4 @@
-(ns spec-provider.core
+(ns spec-provider.provider
   (:require [clojure.spec :as s]
             [clojure.spec.gen :as gen]
             [clojure.spec.test]
