@@ -6,6 +6,7 @@
             [clojure.pprint :refer [pprint]]))
 
 (s/def ::id (s/or :numeric pos-int? :string string?))
+(s/def ::codes (s/coll-of keyword? :max-gen 5))
 (s/def ::first-name string?)
 (s/def ::surname string?)
 (s/def ::k keyword?)
@@ -26,7 +27,7 @@
 
 (s/def ::person
   (s/keys :req-un [::id ::first-name ::surname ::k ::age ::role ::address]
-          :opt-un [::phone-number]))
+          :opt-un [::phone-number ::codes]))
 
 (comment
   > (provider/derive-spec (gen/sample (s/gen integer?) 1000))
@@ -81,13 +82,14 @@
      'person 's)
 
   (s/def ::phone-number string?)
+  (s/def ::codes (s/coll-of keyword?))
   (s/def ::street-number integer?)
   (s/def ::country string?)
   (s/def ::city string?)
   (s/def ::street string?)
   (s/def
     ::address
-    (s/keys :un-req [::street ::city ::country] :un-opt [::street-number]))
+    (s/keys :req-un [::street ::city ::country] :opt-un [::street-number]))
   (s/def ::role #{:programmer :designer})
   (s/def ::age integer?)
   (s/def ::k keyword?)
@@ -97,7 +99,7 @@
   (s/def
     ::person
     (s/keys
-     :un-req
+     :req-un
      [::id ::first-name ::surname ::k ::age ::role ::address]
-     :un-opt
-     [::phone-number])))
+     :opt-un
+     [::codes ::phone-number])))

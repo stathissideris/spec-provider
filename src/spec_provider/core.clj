@@ -63,15 +63,15 @@
                       (fn [[k v]] (and (qualified-key? k) (= (::st/sample-count v) highest-freq))))
         opt          (extract-keys
                       (fn [[k v]] (and (qualified-key? k) (< (::st/sample-count v) highest-freq))))
-        un-req       (extract-keys
+        req-un       (extract-keys
                       (fn [[k v]] (and (not (qualified-key? k)) (= (::st/sample-count v) highest-freq))))
-        un-opt       (extract-keys
+        opt-un       (extract-keys
                       (fn [[k v]] (and (not (qualified-key? k)) (< (::st/sample-count v) highest-freq))))]
     (cond-> (list 'clojure.spec/keys)
       req (concat [:req req])
       opt (concat [:opt opt])
-      un-req (concat [:un-req un-req])
-      un-opt (concat [:un-opt un-opt]))))
+      req-un (concat [:req-un req-un])
+      opt-un (concat [:opt-un opt-un]))))
 
 (defn- summarize-elements [elements-stats]
   (list `s/coll-of (summarize-leaf elements-stats)))
