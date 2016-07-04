@@ -30,8 +30,10 @@
 
 (s/def ::stats
   (s/keys
-   :req [::sample-count ::pred-map ::distinct-values ::hit-distinct-values-limit]
-   :opt [::name ::keys ::elements]))
+   :req [::sample-count ::pred-map ::distinct-values]
+   :opt [::name ::keys ::elements
+         ::hit-distinct-values-limit
+         ::hit-key-size-limit]))
 
 
 (defn- safe-inc [x] (if x (inc x) 1))
