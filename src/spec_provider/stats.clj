@@ -1,6 +1,5 @@
 (ns spec-provider.stats
-  (:require [clojure.spec :as s]
-            [clojure.spec.gen :as gen]))
+  (:require [clojure.spec :as s]))
 
 (def ^:dynamic *distinct-limit* 10)
 (def ^:dynamic *coll-limit* 101)
@@ -16,18 +15,24 @@
    set?
    map?])
 
-(s/def ::distinct-values (s/* ::s/any))
+(s/def ::distinct-values (s/* any?))
 (s/def ::sample-count pos-int?)
+(s/def ::min number?)
+(s/def ::max number?)
+(s/def ::min-length pos-int?)
+(s/def ::max-length pos-int?)
 (s/def ::pred-stats
   (s/keys
    :req [::sample-count]
    :opt [::min ::max ::min-length ::max-length]))
-(s/def ::pred-map (s/map-of ::s/any ::pred-stats))
+(s/def ::pred-map (s/map-of any? ::pred-stats))
 (s/def ::name string?)
 
-(s/def ::keys (s/map-of ::s/any ::stats))
+(s/def ::keys (s/map-of any? ::stats))
 (s/def ::elements (s/* ::stats))
 
+(s/def ::hit-distinct-values-limit boolean?)
+(s/def ::hit-key-size-limit boolean?)
 (s/def ::stats
   (s/keys
    :req [::sample-count ::pred-map ::distinct-values]
@@ -38,7 +43,7 @@
 
 (defn- safe-inc [x] (if x (inc x) 1))
 (defn- safe-set-conj [s x] (if s (conj s x) #{x}))
-(s/fdef safe-set-conj :args (s/cat :set set? :value ::s/any))
+(s/fdef safe-set-conj :args (s/cat :set set? :value any?))
 
 (defn update-pred-stats [pred-stats x]
   (let [s (update pred-stats ::sample-count safe-inc)
@@ -51,7 +56,7 @@
       (and c (< c (or (:min-length s) Long/MAX_VALUE))) (assoc :min-length c)
       (and c (> c (or (:max-length s) Long/MIN_VALUE))) (assoc :max-length c))))
 (s/fdef update-pred-stats
-        :args (s/cat :pred-stats ::pred-stats :value ::s/any)
+        :args (s/cat :pred-stats ::pred-stats :value any?)
         :ret ::pred-stats)
 
 (defn update-pred-map [pred-map x]
@@ -62,7 +67,7 @@
        (update pred-map pred update-pred-stats x)))
    pred-map preds))
 (s/fdef update-pred-stats
-        :args (s/cat :pred-map ::pred-map :value ::s/any)
+        :args (s/cat :pred-map ::pred-map :value any?)
         :ret ::pred-map)
 
 (declare update-stats)
@@ -74,7 +79,7 @@
        (update stats k update-stats v))
      keys-stats x)))
 (s/fdef update-keys-stats
-        :args (s/cat :keys ::keys :value ::s/any)
+        :args (s/cat :keys ::keys :value any?)
         :ret ::keys)
 
 (defn update-elements-stats [elements-stats x]
@@ -105,5 +110,5 @@
           (and (not (coll? x)) (-> stats ::distinct-values count (>= *distinct-limit*)))
             (assoc ::hit-distinct-values-limit true))))
 (s/fdef update-stats
-        :args (s/cat :stats (s/nilable ::stats) :value ::s/any)
+        :args (s/cat :stats (s/nilable ::stats) :value any?)
         :ret ::stats)

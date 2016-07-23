@@ -25,9 +25,9 @@
 (s/fdef merge-with-fns
         :args (s/cat
                :fns (s/map-of keyword? fn?)
-               :a (s/map-of keyword? ::s/any)
-               :b (s/map-of keyword? ::s/any))
-        :ret (s/map-of keyword? ::s/any))
+               :a (s/map-of keyword? any?)
+               :b (s/map-of keyword? any?))
+        :ret (s/map-of keyword? any?))
 
 (def merge-pred-fns
   #:spec-provider.stats
@@ -37,8 +37,19 @@
    :min-length   min
    :max-length   max})
 
-(defn- merge-pred-stats [a b]
+(defn merge-pred-stats [a b]
   (merge-with-fns merge-pred-fns a b))
+(s/fdef merge-pred-stats
+        :args (s/cat :a ::st/pred-stats
+                     :b ::st/pred-stats)
+        :ret ::st/pred-stats)
+
+(defn merge-pred-map [a b]
+  (merge-with merge-pred-stats a b))
+(s/fdef merge-pred-map
+        :args (s/cat :a ::st/pred-map
+                     :b ::st/pred-map)
+        :ret ::st/pred-map)
 
 (def merge-stats-fns
   #:spec-provider.stats
@@ -46,10 +57,14 @@
    :sample-count              +
    :distinct-values           into
    :keys                      merge-keys-stats
-   :pred-map                  merge-pred-stats
+   :pred-map                  merge-pred-map
    :hit-distinct-values-limit #(or %1 %2)
    :hit-key-size-limit        #(or %1 %2)
    :elements                  concat})
 
 (defn merge-stats [a b]
   (merge-with-fns merge-stats-fns a b))
+(s/fdef merge-stats
+        :args (s/cat :a ::st/stats
+                     :b ::st/stats)
+        :ret ::st/stats)
