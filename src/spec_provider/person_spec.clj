@@ -29,56 +29,23 @@
   (s/keys :req-un [::id ::first-name ::surname ::k ::age ::role ::address]
           :opt-un [::phone-number ::codes]))
 
+(defn add-inconsistent-id [person]
+  (if (:address person)
+    (assoc-in person [:address :id] (gen/generate (gen/keyword)))
+    person))
+
 (comment
-  > (provider/derive-spec (gen/sample (s/gen integer?) 1000))
-  > (provider/derive-spec (gen/sample (s/gen (coll-of integer?)) 1000))
+  > (provider/infer-specs (gen/sample (s/gen integer?) 1000))
+  > (provider/infer-specs (gen/sample (s/gen (coll-of integer?)) 1000))
 
 
   > (pprint (reduce stats/update-stats nil (gen/sample (s/gen ::person) 100)))
-  > (pprint (provider/derive-spec (gen/sample (s/gen ::person) 100) :person/person))
-  > (pprint
-     (provider/prettify-spec
-      (provider/derive-spec (gen/sample (s/gen ::person) 100) :person/person)))
+  > (pprint (provider/infer-spec (gen/sample (s/gen ::person) 100) :person/person))
 
-  ;;produces:
-  ((clojure.spec/def :person/phone-number string?)
-   (clojure.spec/def :person/street-number integer?)
-   (clojure.spec/def :person/country string?)
-   (clojure.spec/def :person/city string?)
-   (clojure.spec/def :person/street string?)
-   (clojure.spec/def
-     :person/address
-     (clojure.spec/keys
-      :un-req
-      [:person/street :person/city :person/country]
-      :un-opt
-      [:person/street-number]))
-   (clojure.spec/def :person/role #{:programmer :designer})
-   (clojure.spec/def :person/age integer?)
-   (clojure.spec/def :person/k keyword?)
-   (clojure.spec/def :person/surname string?)
-   (clojure.spec/def :person/first-name string?)
-   (clojure.spec/def
-     :person/id
-     (clojure.spec/or :integer integer? :string string?))
-   (clojure.spec/def
-     :person/person
-     (clojure.spec/keys
-      :un-req
-      [:person/id
-       :person/first-name
-       :person/surname
-       :person/k
-       :person/age
-       :person/role
-       :person/address]
-      :un-opt
-      [:person/phone-number])))
-
-  ;;or prettier:
+  > (def persons (map add-inconsistent-id (gen/sample (s/gen ::person) 100)))
 
   > (provider/pprint-specs
-     (provider/derive-spec (gen/sample (s/gen ::person) 100) :person/person)
+     (provider/infer-specs persons :person/person)
      'person 's)
 
   (s/def ::phone-number string?)

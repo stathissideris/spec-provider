@@ -63,7 +63,10 @@
    :elements                  concat})
 
 (defn merge-stats [a b]
-  (merge-with-fns merge-stats-fns a b))
+  (cond
+    (nil? a) b
+    (nil? b) a
+    :else    (merge-with-fns merge-stats-fns a b)))
 (s/fdef merge-stats
         :args (s/cat :a ::st/stats
                      :b ::st/stats)

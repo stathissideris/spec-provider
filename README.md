@@ -99,6 +99,10 @@ so the calls to `clojure.spec/def` become `s/def` etc.
 
 ???
 
+### Merging
+
+???
+
 ### How it's done
 
 Inferring a spec from raw data is a two step process: Stats collection
@@ -136,6 +140,11 @@ of specs.
 * There is no attempt to infer `multi-spec`.
 * For functions, only the `:args` and `:ret` parts of the spec is
   generated, the `:fn` part is up to you.
+* Spec-provider assumes that you want to follow the Clojure spec
+  convention that the same map keys identify the same "entity", so it
+  will merge stats that appear under the identical keys but in
+  different parts of your tree structure. This may not be what you
+  want. For more details see the "Merging" section.
 
 ## FAQ
 
@@ -151,10 +160,10 @@ of specs.
 * Can I do this for Prismatic schema?
 
   The hard part of inferring a spec is collecting the
-  statistics. Summarizing the stats as specs is relatively easy, so
-  pluging in a different "summarizer" that will output schemas from
+  statistics. Summarizing the stats as specs was relatively easy, so
+  plugging in a different "summarizer" that will output schemas from
   the same stats should be possible. Look at the `provider` namespace,
-  wirte the schema equivalent and send me a pull request!
+  write the schema equivalent and send me a pull request!
 
 ## License
 

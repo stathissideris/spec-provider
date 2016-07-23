@@ -3,6 +3,7 @@
             [clojure.spec.gen :as gen]
             [clojure.spec.test]
             [spec-provider.stats :as st]
+            [spec-provider.merge :refer [merge-stats]]
             [clojure.walk :as walk]
             [clojure.pprint :refer [pprint]]))
 
@@ -107,18 +108,22 @@
 
 (defn summarize-stats [stats spec-name]
   (let [spec-ns    (namespace spec-name)
-        flat-stats (reduce (fn [flat [stat-name stats :as node]]
-                             (if (::st/pred-map stats)
-                               (cons [stat-name stats] flat)
-                               flat))
-                           nil
-                           (tree-seq (comp ::st/keys second)
-                                     (comp ::st/keys second)
-                                     [spec-name stats]))]
-    ;;TODO merge stats for keys that appear twice in flat-stats
+        {:keys [order stats]}
+        (reduce (fn [flat [stat-name stats :as node]]
+                  (if (::st/pred-map stats)
+                    (-> flat
+                        (update :order #(cons stat-name %))
+                        ;;TODO warn on "incompatible" merge
+                        (update-in [:stats stat-name] #(merge-stats % stats)))
+                    flat))
+                {:order ()
+                 :stats {}}
+                (tree-seq (comp ::st/keys second)
+                          (comp ::st/keys second)
+                          [spec-name stats]))]
     (map (fn [[stat-name stats]]
            (summarize-stats* stats (keyword spec-ns (name stat-name)) spec-ns))
-         flat-stats)))
+         (map #(vector % (get stats %)) (distinct order)))))
 
 (defn infer-specs [data spec-name]
   (when-not (namespace spec-name)
