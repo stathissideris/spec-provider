@@ -30,9 +30,9 @@ The are two main use cases for spec-provider:
    * See a summary of what shape the data is. You can use
      spec-provider as a way to explore new datasets.
 
-   * You already know what shape your data is, you just want some
-     helping getting started writing a spec because your data is
-     deeply nested, has a lot of corner cases, you're lazy etc.
+   * You already know what shape your data is, and you just want some
+     helping getting started writing a spec for it because your data
+     is deeply nested, has a lot of corner cases, you're lazy etc.
 
    * You *think* you know what shape your data is, but because it's
      neither typed checked nor contract checked, some exceptions have
@@ -51,16 +51,16 @@ The are two main use cases for spec-provider:
 ## Inferring the spec of raw data
 
 To infer a spec of a bunch of data just pass the data to the
-`infer-spec` function:
+`infer-specs` function:
 
 ```clojure
 > (require '[spec-provider.provider :as sp])
 
 > (def inferred-specs
     (sp/infer-specs
-     [{:a 8 :b "foo" :c :k}
+     [{:a 8  :b "foo" :c :k}
       {:a 10 :b "bar" :c "k"}
-      {:a 1 :b "baz" :c "k"}]
+      {:a 1  :b "baz" :c "k"}]
      :toy/small-map))
 
 > inferred-specs
@@ -88,12 +88,16 @@ Passing `'toy` to `pprint-specs` signals that we intend to paste this
 code into the `toy` namespace, so spec names are printed using the
 `::` syntax.
 
-Passing `'s` signals that we as going to require clojure.spec as `s`,
+Passing `'s` signals that we are going to require clojure.spec as `s`,
 so the calls to `clojure.spec/def` become `s/def` etc.
 
 ### Nested data structures
 
+???
+
 ### Enumerations
+
+???
 
 ### How it's done
 
@@ -107,7 +111,7 @@ numbers, lengths for sequences etc.
 
 Two important points about stats collection:
 
-* Spec-provider *will not* run out of memory even if you throw a lot
+* Spec-provider **will not** run out of memory even if you throw a lot
   of data at it because it updates the same statistics data structure
   with every new example datum it receives.
 
@@ -129,9 +133,28 @@ of specs.
 
 * There is no attempt to infer the regular expression of collections.
 * There is no attempt to infer tuples.
-* There is no attempt to inder `multi-spec`.
+* There is no attempt to infer `multi-spec`.
 * For functions, only the `:args` and `:ret` parts of the spec is
   generated, the `:fn` part is up to you.
+
+## FAQ
+
+* Will I run out of memory if I pass a lot of examples of my data to
+  `infer-specs`?
+
+  No, stats collection works by updating the same data structure with
+  every example of data received. The data structure will initially
+  grow a bit and then maintain a constant size. That means that you
+  can use a lazy sequence to stream your huge table through it if you
+  feel that's necessary (not tested!).
+
+* Can I do this for Prismatic schema?
+
+  The hard part of inferring a spec is collecting the
+  statistics. Summarizing the stats as specs is relatively easy, so
+  pluging in a different "summarizer" that will output schemas from
+  the same stats should be possible. Look at the `provider` namespace,
+  wirte the schema equivalent and send me a pull request!
 
 ## License
 
