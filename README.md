@@ -42,13 +42,13 @@ The are two main use cases for spec-provider:
      of just string as you expected. You can use spec-provider as a
      data debugging tool.
 
-2. You have an un-speced function and you also have a good way to
+2. You have an un-spec'ed function and you also have a good way to
    exercise it (via unit tests, actual usage etc). You can instrument
    the function with spec-provider, run it a few times with actual
    data, and then ask spec-provider for the function spec based on the
    data that flowed through the function.
 
-### Inferring the spec of raw data
+## Inferring the spec of raw data
 
 To infer a spec of a bunch of data just pass the data to the
 `infer-spec` function:
@@ -57,17 +57,18 @@ To infer a spec of a bunch of data just pass the data to the
 > (require '[spec-provider.provider :as sp])
 
 > (def inferred-specs
-    (sp/infer-spec
+    (sp/infer-specs
      [{:a 8 :b "foo" :c :k}
-      {:a 10 :b "bar" :c "k"}]
-     :small-map))
+      {:a 10 :b "bar" :c "k"}
+      {:a 1 :b "baz" :c "k"}]
+     :toy/small-map))
 
 > inferred-specs
 
-((clojure.spec/def :c (clojure.spec/or :keyword keyword? :string string?))
- (clojure.spec/def :b string?)
- (clojure.spec/def :a integer?)
- (clojure.spec/def :small-map (clojure.spec/keys :req-un [:a :b :c])))
+((clojure.spec/def :toy/c (clojure.spec/or :keyword keyword? :string string?))
+ (clojure.spec/def :toy/b string?)
+ (clojure.spec/def :toy/a integer?)
+ (clojure.spec/def :toy/small-map (clojure.spec/keys :req-un [:toy/a :toy/b :toy/c])))
 ```
 
 The sequence of specs that you get out of `infer-spec` is technically
@@ -75,19 +76,62 @@ correct, but not very useful for pasting into your code. Luckily, you
 can do:
 
 ```clojure
-> (sp/pprint-specs inferred-specs 'foo 's)
+> (pprint-specs inferred-specs 'toy 's)
 
-(s/def :c (s/or :keyword keyword? :string string?))
-(s/def :b string?)
-(s/def :a integer?)
-(s/def :small-map (s/keys :req-un [:a :b :c]))
+(s/def ::c (s/or :keyword keyword? :string string?))
+(s/def ::b string?)
+(s/def ::a integer?)
+(s/def ::small-map (s/keys :req-un [::a ::b ::c]))
 ```
 
-??? explain 'foo and 's
+Passing `'toy` to `pprint-specs` signals that we intend to paste this
+code into the `toy` namespace, so spec names are printed using the
+`::` syntax.
 
-### Inferring the spec of functions
+Passing `'s` signals that we as going to require clojure.spec as `s`,
+so the calls to `clojure.spec/def` become `s/def` etc.
+
+### Nested data structures
+
+### Enumerations
+
+### How it's done
+
+Inferring a spec from raw data is a two step process: Stats collection
+and then summarization of the stats into specs.
+
+First each data structure is visited recursively and statistics are
+collected at each level about the types of values that appear, the
+distinct values for each field (up to a limit), min and max values for
+numbers, lengths for sequences etc.
+
+Two important points about stats collection:
+
+* Spec-provider *will not* run out of memory even if you throw a lot
+  of data at it because it updates the same statistics data structure
+  with every new example datum it receives.
+
+* Collecting stats will (at least partly) realize lazy sequences.
+
+After stats collection, code from the `spec-provider.provider`
+namespace goes through the stats and it summarizes it as a collection
+of specs.
+
+### Options
 
 ???
+
+## Inferring the spec of functions
+
+???
+
+## Limitations
+
+* There is no attempt to infer the regular expression of collections.
+* There is no attempt to infer tuples.
+* There is no attempt to inder `multi-spec`.
+* For functions, only the `:args` and `:ret` parts of the spec is
+  generated, the `:fn` part is up to you.
 
 ## License
 
