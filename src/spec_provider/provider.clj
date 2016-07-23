@@ -115,12 +115,16 @@
                            (tree-seq (comp ::st/keys second)
                                      (comp ::st/keys second)
                                      [spec-name stats]))]
-    ;;merge stats for keys that appear twice in flat-stats
+    ;;TODO merge stats for keys that appear twice in flat-stats
     (map (fn [[stat-name stats]]
            (summarize-stats* stats (keyword spec-ns (name stat-name)) spec-ns))
          flat-stats)))
 
-(defn derive-spec [data spec-name]
+(defn infer-specs [data spec-name]
+  (when-not (namespace spec-name)
+    (throw
+     (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
+              {:spec-name spec-name})))
   (summarize-stats (reduce st/update-stats {} data) spec-name))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
@@ -137,13 +141,13 @@
   (doseq [spec (map #(unqualify-spec % domain-ns clojure-spec-ns) specs)]
     (pprint spec)))
 
-;;derive-spec for nested maps algo:
+;;infer-specs for nested maps algo:
 ;; 0. assign names to all nested maps based on the key
 ;;    they're under
 ;; 1. collect all nested maps stats. Also, root map (if map)
 ;; 2. collect all attribute stats from all maps
 ;; 3. (maybe) merge the attribute stats of the ones that have the same name
-;; 4. derive spec for each attribute
-;; 5. derive spec for each map keyset
+;; 4. infer spec for each attribute
+;; 5. infer spec for each map keyset
 
 ;;(s/form (s/or :numeric (s/and integer? pos?) :string string?))
