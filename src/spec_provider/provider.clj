@@ -37,9 +37,9 @@
 (defn summarize-leaf [{::st/keys [pred-map sample-count distinct-values hit-distinct-values-limit] :as stats}]
   (cond (and
          (not hit-distinct-values-limit)
-         (> enum-threshold
-            (/ (float (count distinct-values))
-               (float sample-count))))
+         (>= enum-threshold
+             (/ (float (count distinct-values))
+                (float sample-count))))
         distinct-values
 
         (= 1 (count pred-map))
