@@ -112,3 +112,9 @@
 (s/fdef update-stats
         :args (s/cat :stats (s/nilable ::stats) :value any?)
         :ret ::stats)
+
+(defn collect-stats [data]
+  (reduce update-stats {} data))
+(s/fdef collect-stats
+        :args (s/cat :stats (s/nilable ::stats))
+        :ret ::stats)
