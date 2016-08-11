@@ -74,8 +74,15 @@
       req-un (concat [:req-un req-un])
       opt-un (concat [:opt-un opt-un]))))
 
-(defn- summarize-elements [elements-stats]
-  (list `s/coll-of (summarize-leaf elements-stats)))
+(defn- summarize-coll-elements [stats]
+  (list `s/coll-of (summarize-leaf stats)))
+
+(defn- summarize-pos-elements [stats]
+  (concat
+   (list `s/cat)
+   (interleave
+    (map #(keyword (str "el" %)) (range))
+    (map summarize-leaf (vals (sort-by key stats)))))) ;;TODO extra rules for optional elements
 
 (defn- summarize-or [stats]
   (concat (list `s/or)
@@ -83,25 +90,29 @@
            (map (fn [[pred _]] (pred->name pred)) stats)
            (map (fn [[pred stats]] (summarize-leaf pred stats)) stats))))
 
-(defn summarize-stats* [{pred-map ::st/pred-map
-                         keys-stats ::st/keys
-                         elements-stats ::st/elements
-                         :as stats}
+(defn summarize-stats* [{pred-map            ::st/pred-map
+                         keys-stats          ::st/keys
+                         elements-coll-stats ::st/elements-coll
+                         elements-pos-stats  ::st/elements-pos
+                         :as                 stats}
                         spec-name
                         spec-ns]
   (list `s/def spec-name
-        (cond (and keys-stats elements-stats)
+        (cond (and keys-stats elements-coll-stats)
               (list `s/or
                     :map
                     (summarize-keys keys-stats spec-ns)
                     :collection
-                    (summarize-elements elements-stats))
+                    (summarize-coll-elements elements-coll-stats))
 
               keys-stats
               (summarize-keys keys-stats spec-ns)
 
-              elements-stats
-              (summarize-elements elements-stats)
+              elements-coll-stats
+              (summarize-coll-elements elements-coll-stats)
+
+              elements-pos-stats
+              (summarize-pos-elements elements-pos-stats)
 
               :else
               (summarize-leaf stats))))
