@@ -7,3 +7,4 @@
 * Collect min/max length for strings
 * Collect min/max length for sequential
 * Super strict mode that restricts lengths of strings, min/max on numbers, length of lists etc
+* BUG: 6.0 results in (clojure.spec/or :double double? :float float?)
