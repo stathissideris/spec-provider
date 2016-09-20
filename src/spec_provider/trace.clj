@@ -63,6 +63,14 @@
 
 (s/def ::args (s/coll-of ::arg :kind vector?))
 
+(comment ;; to test
+  (pprint (s/conform
+           ::args
+           '[a b [[deep1 deep2] v1 v2 & rest :as foo]
+             c d {:keys [foo bar] :as foo2 :or {:foo 1 :bar 2}}
+             {a "foo" [x y] :point c :cc}
+             [& rest]])))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- extract-arg-names [args]
