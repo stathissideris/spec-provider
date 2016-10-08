@@ -108,28 +108,30 @@
    ::pred-map {}})
 (s/fdef empty-stats :ret ::stats)
 
-(defn update-stats [stats x {:keys [positional distinct-limit] :as options}]
-  (-> (or stats (empty-stats))
-      (update ::sample-count safe-inc)
-      (update ::pred-map update-pred-map x)
-      (cond->
-          (map? x)
-            (update ::keys update-keys-stats x options)
+(defn update-stats [stats x options]
+  (let [{:keys [positional distinct-limit]}
+        (merge default-options options)]
+    (-> (or stats (empty-stats))
+        (update ::sample-count safe-inc)
+        (update ::pred-map update-pred-map x)
+        (cond->
+            (map? x)
+          (update ::keys update-keys-stats x options)
           (and positional (sequential? x))
-            (update ::elements-pos update-positional-stats x options)
+          (update ::elements-pos update-positional-stats x options)
           (and (not positional) (sequential? x))
-            (update ::elements-coll update-coll-stats x options)
+          (update ::elements-coll update-coll-stats x options)
           (and (not (coll? x)) (-> stats ::distinct-values count (< distinct-limit))) ;;TODO optimize
-            (update ::distinct-values safe-set-conj x)
+          (update ::distinct-values safe-set-conj x)
           (and (not (coll? x)) (-> stats ::distinct-values count (>= distinct-limit)))
-            (assoc ::hit-distinct-values-limit true))))
+          (assoc ::hit-distinct-values-limit true)))))
 (s/fdef update-stats
         :args (s/cat :stats (s/nilable ::stats) :value any?)
         :ret ::stats)
 
 (defn collect-stats
   ([data]
-   (collect-stats data default-options))
+   (collect-stats data {}))
   ([data options]
    (reduce (fn [stats x] (update-stats stats x options)) {} data)))
 (s/fdef collect-stats

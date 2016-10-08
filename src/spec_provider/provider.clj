@@ -34,7 +34,10 @@
    set?        :set
    map?        :map})
 
-(defn summarize-leaf [{::st/keys [pred-map sample-count distinct-values hit-distinct-values-limit] :as stats}]
+(defn summarize-leaf [{:keys [::st/pred-map
+                              ::st/sample-count
+                              ::st/distinct-values
+                              ::st/hit-distinct-values-limit] :as stats}]
   (cond (and
          (not hit-distinct-values-limit)
          (>= enum-threshold
@@ -77,12 +80,15 @@
 (defn- summarize-coll-elements [stats]
   (list `s/coll-of (summarize-leaf stats)))
 
-(defn- summarize-pos-elements [stats]
-  (concat
-   (list `s/cat)
-   (interleave
-    (map #(keyword (str "el" %)) (range))
-    (map summarize-leaf (vals (sort-by key stats)))))) ;;TODO extra rules for optional elements
+(declare summarize-stats*)
+(defn- summarize-pos-elements [stats spec-ns]
+  (list
+   `s/spec ;;TODO would nice for this to not happen at top level
+   (concat
+    (list `s/cat)
+    (interleave
+     (map #(keyword (str "el" %)) (range))
+     (map #(summarize-stats* % spec-ns) (vals (sort-by key stats))))))) ;;TODO extra rules for optional elements
 
 (defn- summarize-or [stats]
   (concat (list `s/or)
@@ -95,30 +101,29 @@
                          elements-coll-stats ::st/elements-coll
                          elements-pos-stats  ::st/elements-pos
                          :as                 stats}
-                        spec-name
                         spec-ns]
-  (list `s/def spec-name
-        (cond (and keys-stats elements-coll-stats)
-              (list `s/or
-                    :map
-                    (summarize-keys keys-stats spec-ns)
-                    :collection
-                    (summarize-coll-elements elements-coll-stats))
-
-              keys-stats
+  (cond (and keys-stats elements-coll-stats)
+        (list `s/or
+              :map
               (summarize-keys keys-stats spec-ns)
+              :collection
+              (summarize-coll-elements elements-coll-stats))
 
-              elements-coll-stats
-              (summarize-coll-elements elements-coll-stats)
+        keys-stats
+        (summarize-keys keys-stats spec-ns)
 
-              elements-pos-stats
-              (summarize-pos-elements elements-pos-stats)
+        elements-coll-stats
+        (summarize-coll-elements elements-coll-stats)
 
-              :else
-              (summarize-leaf stats))))
+        elements-pos-stats
+        (summarize-pos-elements elements-pos-stats spec-ns)
+
+        :else
+        (summarize-leaf stats)))
 
 (defn summarize-stats [stats spec-name]
-  (let [spec-ns    (namespace spec-name)
+  (let [spec-name  (symbol spec-name)
+        spec-ns    (namespace spec-name)
         {:keys [order stats]}
         (reduce (fn [flat [stat-name stats :as node]]
                   (if (::st/pred-map stats)
@@ -133,7 +138,7 @@
                           (comp ::st/keys second)
                           [spec-name stats]))]
     (map (fn [[stat-name stats]]
-           (summarize-stats* stats (keyword spec-ns (name stat-name)) spec-ns))
+           (list `s/def (keyword spec-ns (name stat-name)) (summarize-stats* stats spec-ns)))
          (map #(vector % (get stats %)) (distinct order)))))
 
 (defn infer-specs [data spec-name]
@@ -141,7 +146,7 @@
     (throw
      (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
               {:spec-name spec-name})))
-  (summarize-stats (reduce st/update-stats {} data) spec-name))
+  (summarize-stats (reduce (fn [stats sample] (st/update-stats stats sample {})) {} data) spec-name))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
   (let [domain-ns (str domain-ns)

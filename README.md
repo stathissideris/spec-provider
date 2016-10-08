@@ -1,5 +1,7 @@
 # spec-provider
 
+![](https://circleci.com/gh/stathissideris/spec-provider.svg?&style=shield&circle-token=8aed611e2ff989f042a00dcb5886803db7bbe34c)
+
 This is a library that will produce a best-guess
 [Clojure spec](https://clojure.org/guides/spec) based on multiple
 examples of in memory data. The inferred spec is *not* meant to be
