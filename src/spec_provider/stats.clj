@@ -109,7 +109,7 @@
 (s/fdef empty-stats :ret ::stats)
 
 (defn update-stats [stats x options]
-  (let [{:keys [positional distinct-limit]}
+  (let [{:keys [positional distinct-limit] :as options}
         (merge default-options options)]
     (-> (or stats (empty-stats))
         (update ::sample-count safe-inc)
@@ -126,7 +126,7 @@
           (and (not (coll? x)) (-> stats ::distinct-values count (>= distinct-limit)))
           (assoc ::hit-distinct-values-limit true)))))
 (s/fdef update-stats
-        :args (s/cat :stats (s/nilable ::stats) :value any?)
+        :args (s/cat :stats (s/nilable ::stats) :value any? :options ::stats-options)
         :ret ::stats)
 
 (defn collect-stats

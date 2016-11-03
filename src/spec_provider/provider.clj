@@ -5,7 +5,8 @@
             [spec-provider.stats :as st]
             [spec-provider.merge :refer [merge-stats]]
             [clojure.walk :as walk]
-            [clojure.pprint :refer [pprint]]))
+            [clojure.pprint :refer [pprint]]
+            [spec-provider.stats :as stats]))
 
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an
@@ -122,8 +123,7 @@
         (summarize-leaf stats)))
 
 (defn summarize-stats [stats spec-name]
-  (let [spec-name  (symbol spec-name)
-        spec-ns    (namespace spec-name)
+  (let [spec-ns    (namespace spec-name)
         {:keys [order stats]}
         (reduce (fn [flat [stat-name stats :as node]]
                   (if (::st/pred-map stats)
@@ -146,7 +146,7 @@
     (throw
      (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
               {:spec-name spec-name})))
-  (summarize-stats (reduce (fn [stats sample] (st/update-stats stats sample {})) {} data) spec-name))
+  (summarize-stats (stats/collect-stats data) spec-name))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
   (let [domain-ns (str domain-ns)

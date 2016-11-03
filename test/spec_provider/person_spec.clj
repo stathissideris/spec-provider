@@ -40,7 +40,7 @@
 
 
   > (pprint (reduce stats/update-stats nil (gen/sample (s/gen ::person) 100)))
-  > (pprint (provider/infer-spec (gen/sample (s/gen ::person) 100) :person/person))
+  > (pprint (provider/infer-specs (gen/sample (s/gen ::person) 100) :person/person))
 
   > (def persons (map add-inconsistent-id (gen/sample (s/gen ::person) 100)))
 
