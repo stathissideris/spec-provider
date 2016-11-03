@@ -6,6 +6,12 @@
    :coll-limit       101
    :positional       false
    :positional-limit 100})
+(s/def ::distinct-limit pos-int?)
+(s/def ::coll-limit pos-int?)
+(s/def ::positional boolean?)
+(s/def ::positional-limit pos-int?)
+(s/def ::stats-options
+  (s/keys :opt-un [::distinct-limit ::coll-limit ::positional ::positional-limit]))
 
 (def preds
   [string?
@@ -19,11 +25,11 @@
    map?])
 
 (s/def ::distinct-values (s/* any?))
-(s/def ::sample-count pos-int?)
+(s/def ::sample-count nat-int?)
 (s/def ::min number?)
 (s/def ::max number?)
-(s/def ::min-length pos-int?)
-(s/def ::max-length pos-int?)
+(s/def ::min-length nat-int?)
+(s/def ::max-length nat-int?)
 (s/def ::pred-stats
   (s/keys
    :req [::sample-count]
@@ -32,7 +38,7 @@
 (s/def ::name string?)
 
 (s/def ::keys (s/map-of any? ::stats))
-(s/def ::elements-pos (s/map-of pos-int? ::stats))
+(s/def ::elements-pos (s/map-of nat-int? ::stats))
 
 (s/def ::hit-distinct-values-limit boolean?)
 (s/def ::hit-key-size-limit boolean?)
@@ -60,7 +66,7 @@
       (and c (< c (or (:min-length s) Long/MAX_VALUE))) (assoc :min-length c)
       (and c (> c (or (:max-length s) Long/MIN_VALUE))) (assoc :max-length c))))
 (s/fdef update-pred-stats
-        :args (s/cat :pred-stats ::pred-stats :value any?)
+        :args (s/cat :pred-stats (s/nilable ::pred-stats) :value any?)
         :ret ::pred-stats)
 
 (defn update-pred-map [pred-map x]
@@ -70,8 +76,8 @@
        pred-map
        (update pred-map pred update-pred-stats x)))
    pred-map preds))
-(s/fdef update-pred-stats
-        :args (s/cat :pred-map ::pred-map :value any?)
+(s/fdef update-pred-map
+        :args (s/cat :pred-map (s/nilable ::pred-map) :value any?)
         :ret ::pred-map)
 
 (declare update-stats)
@@ -83,7 +89,7 @@
        (update stats k update-stats v options))
      keys-stats x)))
 (s/fdef update-keys-stats
-        :args (s/cat :keys ::keys :value any?)
+        :args (s/cat :keys (s/nilable ::keys) :value any? :options ::stats-options)
         :ret ::keys)
 
 (defn update-coll-stats [stats x {:keys [coll-limit] :as options}]
@@ -133,7 +139,8 @@
   ([data]
    (collect-stats data {}))
   ([data options]
-   (reduce (fn [stats x] (update-stats stats x options)) {} data)))
+   (reduce (fn [stats x] (update-stats stats x options)) nil data)))
 (s/fdef collect-stats
-        :args (s/cat :data (s/nilable any?))
+        :args (s/cat :data (s/nilable any?)
+                     :options (s/* ::stats-options))
         :ret ::stats)

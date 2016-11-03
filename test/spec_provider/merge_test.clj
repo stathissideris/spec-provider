@@ -40,8 +40,14 @@
          {:name                      "foo"
           :sample-count              45
           :distinct-values           #{:c :b :a}
-          :keys                      {:a {::st/name "bar"}
-                                      :b {::st/name "baz"}}
+          :keys                      {:a #::st {:name "bar"
+                                                 :sample-count 1
+                                                 :distinct-values ["bar-val"]
+                                                 :pred-map {string? {:sample-count 1}}}
+                                      :b #::st {:name "bar"
+                                                 :sample-count 1
+                                                 :distinct-values ["bar-val"]
+                                                 :pred-map {string? {:sample-count 1}}}}
           :pred-map
           {:a #::st{:sample-count 35
                     :min          1
@@ -56,7 +62,10 @@
           {:name                      "foo"
            :sample-count              10
            :distinct-values           #{:a :b}
-           :keys                      {:a {::st/name "bar"}}
+           :keys                      {:a #::st {:name "bar"
+                                                 :sample-count 1
+                                                 :distinct-values ["bar-val"]
+                                                 :pred-map {string? {:sample-count 1}}}}
            :pred-map
            {:a #::st{:sample-count 15
                      :min          2
@@ -70,7 +79,10 @@
           {:name                      "foo"
            :sample-count              35
            :distinct-values           #{:c}
-           :keys                      {:b {::st/name "baz"}}
+           :keys                      {:b #::st {:name "baz"
+                                                 :sample-count 1
+                                                 :distinct-values ["baz-val"]
+                                                 :pred-map {string? {:sample-count 1}}}}
            :pred-map
            {:a #::st{:sample-count 20
                      :min          1

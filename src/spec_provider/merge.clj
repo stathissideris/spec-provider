@@ -68,6 +68,6 @@
     (nil? b) a
     :else    (merge-with-fns merge-stats-fns a b)))
 (s/fdef merge-stats
-        :args (s/cat :a ::st/stats
-                     :b ::st/stats)
+        :args (s/cat :a (s/nilable ::st/stats)
+                     :b (s/nilable ::st/stats))
         :ret ::st/stats)
