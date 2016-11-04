@@ -14,7 +14,7 @@
               `merge-stats])
 
 (deftest test-merge-pred-stats
-  (is (= #:spec-provider.stats
+  (is (= #::st
          {:sample-count 25
           :min          2
           :max          100
@@ -22,13 +22,13 @@
           :max-length   20}
          (merge-pred-stats
 
-          #:spec-provider.stats
+          #::st
           {:sample-count 15
            :min          2
            :max          80
            :min-length   0
            :max-length   18}
-          #:spec-provider.stats
+          #::st
           {:sample-count 10
            :min          10
            :max          100
@@ -41,13 +41,13 @@
           :sample-count              45
           :distinct-values           #{:c :b :a}
           :keys                      {:a #::st {:name "bar"
-                                                 :sample-count 1
-                                                 :distinct-values ["bar-val"]
-                                                 :pred-map {string? {:sample-count 1}}}
-                                      :b #::st {:name "bar"
-                                                 :sample-count 1
-                                                 :distinct-values ["bar-val"]
-                                                 :pred-map {string? {:sample-count 1}}}}
+                                                :sample-count 1
+                                                :distinct-values ["bar-val"]
+                                                :pred-map {string? #::st {:sample-count 1}}}
+                                      :b #::st {:name "baz"
+                                                :sample-count 1
+                                                :distinct-values ["baz-val"]
+                                                :pred-map {string? #::st {:sample-count 1}}}}
           :pred-map
           {:a #::st{:sample-count 35
                     :min          1
@@ -65,7 +65,7 @@
            :keys                      {:a #::st {:name "bar"
                                                  :sample-count 1
                                                  :distinct-values ["bar-val"]
-                                                 :pred-map {string? {:sample-count 1}}}}
+                                                 :pred-map {string? #::st {:sample-count 1}}}}
            :pred-map
            {:a #::st{:sample-count 15
                      :min          2
@@ -82,7 +82,7 @@
            :keys                      {:b #::st {:name "baz"
                                                  :sample-count 1
                                                  :distinct-values ["baz-val"]
-                                                 :pred-map {string? {:sample-count 1}}}}
+                                                 :pred-map {string? #::st {:sample-count 1}}}}
            :pred-map
            {:a #::st{:sample-count 20
                      :min          1
