@@ -48,7 +48,7 @@
    :opt [::name ::keys ::elements-pos ::elements-coll
          ::hit-distinct-values-limit
          ::hit-key-size-limit]))
-(s/def ::elements-coll ::stats)
+(s/def ::elements-coll (s/nilable ::stats))
 
 
 (defn- safe-inc [x] (if x (inc x) 1))
