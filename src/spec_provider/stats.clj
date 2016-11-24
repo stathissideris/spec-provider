@@ -2,10 +2,10 @@
   (:require [clojure.spec :as s]))
 
 (def default-options
-  {:distinct-limit   10
-   :coll-limit       101
-   :positional       false
-   :positional-limit 100})
+  {::distinct-limit   10
+   ::coll-limit       101
+   ::positional       false
+   ::positional-limit 100})
 (s/def ::distinct-limit pos-int?)
 (s/def ::coll-limit pos-int?)
 (s/def ::positional boolean?)
@@ -61,10 +61,10 @@
         counted (or (counted? x) (string? x))
         c (when counted (count x))]
     (cond-> s
-      (and number (< x (or (:min s) Long/MAX_VALUE))) (assoc :min x)
-      (and number (> x (or (:max s) Long/MIN_VALUE))) (assoc :max x)
-      (and c (< c (or (:min-length s) Long/MAX_VALUE))) (assoc :min-length c)
-      (and c (> c (or (:max-length s) Long/MIN_VALUE))) (assoc :max-length c))))
+      (and number (< x (or (::min s) Long/MAX_VALUE))) (assoc ::min x)
+      (and number (> x (or (::max s) Long/MIN_VALUE))) (assoc ::max x)
+      (and c (< c (or (::min-length s) Long/MAX_VALUE))) (assoc ::min-length c)
+      (and c (> c (or (::max-length s) Long/MIN_VALUE))) (assoc ::max-length c))))
 (s/fdef update-pred-stats
         :args (s/cat :pred-stats (s/nilable ::pred-stats) :value any?)
         :ret ::pred-stats)
@@ -92,7 +92,7 @@
         :args (s/cat :keys (s/nilable ::keys) :value any? :options ::stats-options)
         :ret ::keys)
 
-(defn update-coll-stats [stats x {:keys [coll-limit] :as options}]
+(defn update-coll-stats [stats x {:keys [::coll-limit] :as options}]
   (if-not (sequential? x)
     stats
     (reduce
@@ -100,7 +100,7 @@
        (update-stats stats element options))
      stats (take coll-limit x))))
 
-(defn update-positional-stats [stats x {:keys [positional-limit] :as options}]
+(defn update-positional-stats [stats x {:keys [::positional-limit] :as options}]
   (if-not (sequential? x)
     stats
     (let [stats (or stats {})]
@@ -115,7 +115,7 @@
 (s/fdef empty-stats :ret ::stats)
 
 (defn update-stats [stats x options]
-  (let [{:keys [positional distinct-limit] :as options}
+  (let [{:keys [::positional ::distinct-limit] :as options}
         (merge default-options options)]
     (-> (or stats (empty-stats))
         (update ::sample-count safe-inc)
@@ -132,7 +132,7 @@
           (and (not (coll? x)) (-> stats ::distinct-values count (>= distinct-limit)))
           (assoc ::hit-distinct-values-limit true)))))
 (s/fdef update-stats
-        :args (s/cat :stats (s/nilable ::stats) :value any? :options ::stats-options)
+        :args (s/cat :stats (s/nilable ::stats) :value any? :options (s/? (s/nilable ::stats-options)))
         :ret ::stats)
 
 (defn collect-stats
@@ -142,5 +142,5 @@
    (reduce (fn [stats x] (update-stats stats x options)) nil data)))
 (s/fdef collect-stats
         :args (s/cat :data (s/nilable any?)
-                     :options (s/* ::stats-options))
+                     :options (s/? (s/nilable ::stats-options)))
         :ret ::stats)
