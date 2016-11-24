@@ -141,20 +141,25 @@
            (list `s/def (keyword spec-ns (name stat-name)) (summarize-stats* stats spec-ns)))
          (map #(vector % (get stats %)) (distinct order)))))
 
-(defn infer-specs [data spec-name]
-  (when-not (namespace spec-name)
-    (throw
-     (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
-              {:spec-name spec-name})))
-  (summarize-stats (stats/collect-stats data) spec-name))
+(defn infer-specs
+  ([data spec-name]
+   (infer-specs data spec-name {}))
+  ([data spec-name options]
+   (when-not (namespace spec-name)
+     (throw
+      (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
+               {:spec-name spec-name})))
+   (summarize-stats (stats/collect-stats data (:stats/options options)) spec-name)))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
   (let [domain-ns (str domain-ns)
         clojure-spec-ns (str clojure-spec-ns)]
     (walk/postwalk
      (fn [x]
-       (cond (and (symbol? x) (= "clojure.spec" (namespace x))) (symbol clojure-spec-ns (name x))
-             (and (keyword? x) (= domain-ns (namespace x))) (symbol (str "::" (name x))) ;;nasty hack to get the printer to print ::foo
+       (cond (and (symbol? x) (= "clojure.spec" (namespace x)))
+               (symbol clojure-spec-ns (name x))
+             (and (keyword? x) (= domain-ns (namespace x)))
+               (symbol (str "::" (name x))) ;;nasty hack to get the printer to print ::foo
              :else x))
      spec)))
 
