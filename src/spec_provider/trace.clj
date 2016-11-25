@@ -5,7 +5,7 @@
             [spec-provider.provider :as provider]))
 
 (defn- record-arg-values! [fn-name a args]
-  (swap! a update-in [fn-name :args] #(stats/update-stats % args {:positional true})))
+  (swap! a update-in [fn-name :args] #(stats/update-stats % args {:stats/positional true})))
 
 (defn- record-return-value! [fn-name a val]
   (swap! a update-in [fn-name :return] #(stats/update-stats % val {}))
@@ -93,7 +93,13 @@
 (defn- instrument-body [fn-name atom-sym body]
   (let [args (mapv add-as (first body))]
     `(~args
-      (record-arg-values! ~fn-name ~atom-sym ~(mapv handle-map-destruct args))
+      ~(let [[normal-args [_ var-arg]] (split-with #(not= '& %) args)]
+         (if var-arg
+           `(record-arg-values! ~fn-name ~atom-sym
+                                (conj
+                                 ~(mapv handle-map-destruct normal-args)
+                                 ~(handle-map-destruct var-arg)))
+           `(record-arg-values! ~fn-name ~atom-sym ~(mapv handle-map-destruct args))))
       ~@(drop 1 (butlast body))
       (record-return-value! ~fn-name ~atom-sym ~(last body)))))
 
@@ -128,6 +134,10 @@
 (defn spec-form [s]
   (nth s 2))
 
+(defn update-args [[_ _ _ args :as spec] fun]
+  (into () (-> (into [] spec)
+               (update 3 fun))))
+
 (defn fn-spec [trace-atom fn-name]
   (let [stats        (get @trace-atom (str fn-name))
         arg-names    (map keyword (:arg-names stats))
@@ -143,13 +153,13 @@
             :ret  (-> return-specs last spec-form))])))
 
 (defn pprint-fn-spec [trace-atom fn-name domain-ns clojure-spec-ns]
-  (provider/pprint-specs (fn-specs trace-atom fn-name) domain-ns clojure-spec-ns))
+  (provider/pprint-specs (fn-spec trace-atom fn-name) domain-ns clojure-spec-ns))
 
-(defonce b (atom {}))
+(defonce c (atom {}))
 
 (comment
   (instrument
-   b
+   c
    (defn foo "doc"
      ([a b c d e f g h i j & rest]
       (swap! (atom []) conj 1)
@@ -164,6 +174,7 @@
   )
 
 (comment
-  (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9})
-  (pprint-fn-spec a 'spec-provider.trace/foo 'person 's)
+  (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
+  (pprint-fn-spec c 'spec-provider.trace/foo 'spec-provider.trace 's)
+  (-> c deref (get "spec-provider.trace/foo") :arg-names)
   )

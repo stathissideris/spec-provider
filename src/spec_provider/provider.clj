@@ -126,7 +126,8 @@
   (let [spec-ns    (namespace spec-name)
         {:keys [order stats]}
         (reduce (fn [flat [stat-name stats :as node]]
-                  (if (::st/pred-map stats)
+                  (if (and (keyword? stat-name) ;;stat "name" is number for ::st/elements-pos
+                           (::st/pred-map stats))
                     (-> flat
                         (update :order #(cons stat-name %))
                         ;;TODO warn on "incompatible" merge
@@ -134,8 +135,8 @@
                     flat))
                 {:order ()
                  :stats {}}
-                (tree-seq (comp ::st/keys second)
-                          (comp ::st/keys second)
+                (tree-seq (comp (some-fn ::st/keys ::st/elements-pos) second)
+                          (comp (some-fn ::st/keys ::st/elements-pos) second)
                           [spec-name stats]))]
     (map (fn [[stat-name stats]]
            (list `s/def (keyword spec-ns (name stat-name)) (summarize-stats* stats spec-ns)))
@@ -149,7 +150,7 @@
      (throw
       (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
                {:spec-name spec-name})))
-   (summarize-stats (stats/collect-stats data (:stats/options options)) spec-name)))
+   (summarize-stats (stats/collect-stats data (::stats/options options)) spec-name)))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
   (let [domain-ns (str domain-ns)

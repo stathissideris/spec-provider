@@ -33,47 +33,65 @@
           {:distinct-values #{}
            :sample-count 1
            :pred-map
-           {sequential?
-            #::stats
-            {:sample-count 1
-             :min-length 3
-             :max-length 3}}
+           {sequential? #::stats{:sample-count 1 :min-length 3 :max-length 3}}
            :elements-pos
            {0
             #::stats
             {:distinct-values #{1}
              :sample-count 1
              :pred-map
-             {integer?
-              #::stats
-              {:sample-count 1
-               :min 1
-               :max 1}}}
+             {integer? #::stats{:sample-count 1 :min 1 :max 1}}}
             1
             #::stats
             {:distinct-values #{2}
              :sample-count 1
              :pred-map
-             {integer?
-              #::stats
-              {:sample-count 1
-               :min 2
-               :max 2}}}
+             {integer? #::stats{:sample-count 1 :min 2 :max 2}}}
             2
             #::stats
             {:distinct-values #{2}
              :sample-count 1
              :pred-map
-             {integer?
-              #::stats
-              {:sample-count 1
-               :min 2
-               :max 2}}}}}
+             {integer? #::stats{:sample-count 1 :min 2 :max 2}}}}}
           (collect-stats [[1 2 2]] {::stats/positional true}))))
 
   (testing "positional stats are collected differently to normal stats"
     (is (not= (collect-stats [[1 2 2]])
               (collect-stats [[1 2 2]] {::stats/positional true}))))
+
+  (testing "nested map stats"
+    (is (= #::stats
+           {:distinct-values #{}
+            :sample-count 1
+            :pred-map
+            {map? #::stats{:sample-count 1 :min-length 2 :max-length 2}}
+            :keys
+            {:foo
+             #::stats
+             {:distinct-values #{1}
+              :sample-count 1
+              :pred-map
+              {integer? #::stats{:sample-count 1 :min 1 :max 1}}}
+             :bar
+             #::stats
+             {:distinct-values #{}
+              :sample-count 1
+              :pred-map
+              {map? #::stats{:sample-count 1 :min-length 2 :max-length 2}}
+              :keys
+              {:baz
+               #::stats
+               {:distinct-values #{2}
+                :sample-count 1
+                :pred-map
+                {integer? #::stats{:sample-count 1 :min 2 :max 2}}}
+               :boo
+               #::stats
+               {:distinct-values #{3}
+                :sample-count 1
+                :pred-map
+                {integer? #::stats{:sample-count 1 :min 3 :max 3}}}}}}}
+         (collect-stats [{:foo 1 :bar {:baz 2 :boo 3}}]))))
 
   (is (collect-stats (gen/sample (s/gen integer?) 1000)))
   (is (collect-stats (gen/sample (s/gen (s/coll-of integer?)) 1000)))
