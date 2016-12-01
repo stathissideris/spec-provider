@@ -37,7 +37,7 @@
 (s/def ::pred-map (s/map-of any? ::pred-stats))
 (s/def ::name string?)
 
-(s/def ::keys (s/map-of any? ::stats))
+(s/def ::keys (s/nilable (s/map-of any? ::stats))) ;;nilable because map may be empty
 (s/def ::elements-pos (s/map-of nat-int? ::stats))
 
 (s/def ::hit-distinct-values-limit boolean?)
