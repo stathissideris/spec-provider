@@ -5,7 +5,7 @@
             [spec-provider.provider :as provider]))
 
 (defn- record-arg-values! [fn-name a args]
-  (swap! a update-in [fn-name :args] #(stats/update-stats % args {:stats/positional true})))
+  (swap! a update-in [fn-name :args] #(stats/update-stats % args {::stats/positional true})))
 
 (defn- record-return-value! [fn-name a val]
   (swap! a update-in [fn-name :return] #(stats/update-stats % val {}))
@@ -155,11 +155,14 @@
 (defn pprint-fn-spec [trace-atom fn-name domain-ns clojure-spec-ns]
   (provider/pprint-specs (fn-spec trace-atom fn-name) domain-ns clojure-spec-ns))
 
-(defonce c (atom {}))
+(defn clear-registry! [reg]
+  (reset! reg {}))
+
+(defonce reg (atom {}))
 
 (comment
   (instrument
-   c
+   reg
    (defn foo "doc"
      ([a b c d e f g h i j & rest]
       (swap! (atom []) conj 1)
@@ -174,7 +177,7 @@
   )
 
 (comment
-  (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
-  (pprint-fn-spec c 'spec-provider.trace/foo 'spec-provider.trace 's)
-  (-> c deref (get "spec-provider.trace/foo") :arg-names)
+  (foo 1 2 [[3 4] 5] 6 7 {:baz 8 :bar 9} {})
+  (pprint-fn-spec reg 'spec-provider.trace/foo 'spec-provider.trace 's)
+  (-> reg deref (get "spec-provider.trace/foo") :arg-names)
   )
