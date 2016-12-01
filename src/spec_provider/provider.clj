@@ -2,11 +2,10 @@
   (:require [clojure.spec :as s]
             [clojure.spec.gen :as gen]
             [clojure.spec.test]
-            [spec-provider.stats :as st]
+            [spec-provider.stats :as stats]
             [spec-provider.merge :refer [merge-stats]]
             [clojure.walk :as walk]
-            [clojure.pprint :refer [pprint]]
-            [spec-provider.stats :as stats]))
+            [clojure.pprint :refer [pprint]]))
 
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an
@@ -35,10 +34,10 @@
    set?        :set
    map?        :map})
 
-(defn summarize-leaf [{:keys [::st/pred-map
-                              ::st/sample-count
-                              ::st/distinct-values
-                              ::st/hit-distinct-values-limit] :as stats}]
+(defn summarize-leaf [{:keys [::stats/pred-map
+                              ::stats/sample-count
+                              ::stats/distinct-values
+                              ::stats/hit-distinct-values-limit] :as stats}]
   (cond (and
          (not hit-distinct-values-limit)
          (>= enum-threshold
@@ -58,20 +57,20 @@
 (defn- qualify-key [k ns] (keyword (str ns) (name k)))
 
 (defn summarize-keys [keys-stats ns]
-  (let [highest-freq (apply max (map ::st/sample-count (vals keys-stats)))
+  (let [highest-freq (apply max (map ::stats/sample-count (vals keys-stats)))
         extract-keys (fn [filter-fn]
                        (->> keys-stats
                             (filter filter-fn)
                             (mapv #(qualify-key (key %) ns))
                             not-empty))
         req          (extract-keys
-                      (fn [[k v]] (and (qualified-key? k) (= (::st/sample-count v) highest-freq))))
+                      (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) highest-freq))))
         opt          (extract-keys
-                      (fn [[k v]] (and (qualified-key? k) (< (::st/sample-count v) highest-freq))))
+                      (fn [[k v]] (and (qualified-key? k) (< (::stats/sample-count v) highest-freq))))
         req-un       (extract-keys
-                      (fn [[k v]] (and (not (qualified-key? k)) (= (::st/sample-count v) highest-freq))))
+                      (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) highest-freq))))
         opt-un       (extract-keys
-                      (fn [[k v]] (and (not (qualified-key? k)) (< (::st/sample-count v) highest-freq))))]
+                      (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) highest-freq))))]
     (cond-> (list 'clojure.spec/keys)
       req (concat [:req req])
       opt (concat [:opt opt])
@@ -97,10 +96,10 @@
            (map (fn [[pred _]] (pred->name pred)) stats)
            (map (fn [[pred stats]] (summarize-leaf pred stats)) stats))))
 
-(defn summarize-stats* [{pred-map            ::st/pred-map
-                         keys-stats          ::st/keys
-                         elements-coll-stats ::st/elements-coll
-                         elements-pos-stats  ::st/elements-pos
+(defn summarize-stats* [{pred-map            ::stats/pred-map
+                         keys-stats          ::stats/keys
+                         elements-coll-stats ::stats/elements-coll
+                         elements-pos-stats  ::stats/elements-pos
                          :as                 stats}
                         spec-ns]
   (cond (and keys-stats elements-coll-stats)
@@ -126,8 +125,8 @@
   (let [spec-ns    (namespace spec-name)
         {:keys [order stats]}
         (reduce (fn [flat [stat-name stats :as node]]
-                  (if (and (keyword? stat-name) ;;stat "name" is number for ::st/elements-pos
-                           (::st/pred-map stats))
+                  (if (and (not (number? stat-name)) ;;stat "name" is number for ::stats/elements-pos
+                           (::stats/pred-map stats))
                     (-> flat
                         (update :order #(cons stat-name %))
                         ;;TODO warn on "incompatible" merge
@@ -135,8 +134,8 @@
                     flat))
                 {:order ()
                  :stats {}}
-                (tree-seq (comp (some-fn ::st/keys ::st/elements-pos) second)
-                          (comp (some-fn ::st/keys ::st/elements-pos) second)
+                (tree-seq (comp (some-fn ::stats/keys ::stats/elements-pos) second)
+                          (comp (some-fn ::stats/keys ::stats/elements-pos) second)
                           [spec-name stats]))]
     (map (fn [[stat-name stats]]
            (list `s/def (keyword spec-ns (name stat-name)) (summarize-stats* stats spec-ns)))
