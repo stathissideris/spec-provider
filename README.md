@@ -4,7 +4,7 @@
 
 This is a library that will produce a best-guess
 [Clojure spec](https://clojure.org/guides/spec) based on multiple
-examples of in memory data. The inferred spec is *not* meant to be
+examples of in-memory data. The inferred spec is *not* meant to be
 used as is and without human supervision, it is rather a starting
 point that can (and should) be refined.
 
@@ -13,7 +13,7 @@ type provider, but the input in the case of spec-provider is any
 in-memory Clojure data structure.
 
 Since Clojure spec is still in alpha, this library should also be
-considered to be in alpha, so highly experimental, very likely to
+considered to be in alpha -- so, highly experimental, very likely to
 change, possibly flawed.
 
 ## Usage
@@ -35,8 +35,8 @@ The are two main use cases for spec-provider:
      spec-provider as a way to explore new datasets.
 
    * You already know what shape your data is, and you just want some
-     helping getting started writing a spec for it because your data
-     is deeply nested, has a lot of corner cases, you're lazy etc.
+     help getting started writing a spec for it because your data is
+     deeply nested, has a lot of corner cases, you're lazy etc.
 
    * You *think* you know what shape your data is, but because it's
      neither typed checked nor contract checked, some exceptions have
