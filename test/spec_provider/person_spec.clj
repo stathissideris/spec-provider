@@ -13,7 +13,7 @@
 (s/def ::age (s/with-gen
                (s/and integer? pos? #(<= % 130))
                #(gen/int 130)))
-(s/def ::role #{:programmer :designer})
+(s/def :person/role #{:programmer :designer})
 (s/def ::phone-number string?)
 
 (s/def ::street string?)
@@ -26,8 +26,9 @@
           :opt-un [::street-number]))
 
 (s/def ::person
-  (s/keys :req-un [::id ::first-name ::surname ::k ::age ::role ::address]
-          :opt-un [::phone-number ::codes]))
+  (s/keys :req-un [::id ::first-name ::surname ::k ::age ::address]
+          :opt-un [::phone-number ::codes]
+          :req    [:person/role]))
 
 (defn add-inconsistent-id [person]
   (if (:address person)
@@ -35,38 +36,21 @@
     person))
 
 (comment
-  > (provider/infer-specs (gen/sample (s/gen integer?) 1000))
-  > (provider/infer-specs (gen/sample (s/gen (coll-of integer?)) 1000))
+  (provider/infer-specs (gen/sample (s/gen integer?) 1000) ::stuff)
+  (provider/infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) ::list)
 
+  (pprint (reduce stats/update-stats nil (gen/sample (s/gen ::person) 100)))
+  (pprint (provider/infer-specs (gen/sample (s/gen ::person) 100) :person/person))
 
-  > (pprint (reduce stats/update-stats nil (gen/sample (s/gen ::person) 100)))
-  > (pprint (provider/infer-specs (gen/sample (s/gen ::person) 100) :person/person))
+  (def persons (gen/sample (s/gen ::person) 100))
+  (pprint (stats/collect-stats persons {}))
 
-  > (def persons (map add-inconsistent-id (gen/sample (s/gen ::person) 100)))
+  (provider/pprint-specs
+   (provider/infer-specs persons :person/person)
+   'person 's)
 
-  > (provider/pprint-specs
-     (provider/infer-specs persons :person/person)
-     'person 's)
+  (def persons-spiked (map add-inconsistent-id (gen/sample (s/gen ::person) 100)))
 
-  (s/def ::phone-number string?)
-  (s/def ::codes (s/coll-of keyword?))
-  (s/def ::street-number integer?)
-  (s/def ::country string?)
-  (s/def ::city string?)
-  (s/def ::street string?)
-  (s/def
-    ::address
-    (s/keys :req-un [::street ::city ::country] :opt-un [::street-number]))
-  (s/def ::role #{:programmer :designer})
-  (s/def ::age integer?)
-  (s/def ::k keyword?)
-  (s/def ::surname string?)
-  (s/def ::first-name string?)
-  (s/def ::id (s/or :integer integer? :string string?))
-  (s/def
-    ::person
-    (s/keys
-     :req-un
-     [::id ::first-name ::surname ::k ::age ::role ::address]
-     :opt-un
-     [::codes ::phone-number])))
+  (provider/pprint-specs
+   (provider/infer-specs persons-spiked :person/person)
+   'person 's))
