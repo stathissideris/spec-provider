@@ -20,7 +20,9 @@ change, possibly flawed.
 
 To use this library, add this dependency to your `project.clj` file:
 
-???
+```
+[spec-provider "0.3.0"]
+```
 
 ## Use cases
 
@@ -350,11 +352,14 @@ of specs.
 
 ### Options
 
-???
+Undocumented: there is a number of options that can affect how the
+sample stats are collected.
 
 ## Inferring the spec of functions
 
-???
+Undocumented/under development: there is experimental support for
+instrumenting functions for the purpose of inferring the spec of args
+and return values.
 
 ## Limitations
 

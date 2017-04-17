@@ -1,4 +1,4 @@
-(defproject spec-provider "0.1.0-SNAPSHOT"
+(defproject spec-provider "0.3.0"
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
