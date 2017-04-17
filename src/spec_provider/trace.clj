@@ -30,7 +30,7 @@
 
 (s/def ::map-as symbol?)
 
-(s/def ::or (s/map-of any? any?))
+(s/def ::or (s/map-of simple-symbol? any?))
 
 (s/def ::keys (s/coll-of symbol? :kind vector?))
 (s/def ::keys-destr (s/keys :req-un [::keys] :opt-un [::map-as ::or]))
@@ -59,9 +59,30 @@
   (pprint (s/conform
            ::args
            '[a b [[deep1 deep2] v1 v2 & rest :as foo]
-             c d {:keys [foo bar] :as foo2 :or {:foo 1 :bar 2}}
+             c d {:keys [foo bar] :as foo2 :or {foo 1 bar 2}}
              {a "foo" [x y] :point c :cc}
              [& rest]])))
+
+(comment ;; to test
+  (pprint (s/conform
+           :clojure.core.specs/arg-list
+           '[a b [[deep1 deep2] v1 v2 & rest :as foo]
+             c d {:keys [foo bar] :as foo2 :or {foo 1 bar 2}}
+             {a "foo" [x y] :point c :cc}
+             [& rest]])))
+
+(comment
+  (->> (s/registry) keys (sort-by str) pprint)
+
+  (pprint (s/form (s/get-spec :clojure.core/let)))
+
+  (pprint (s/form (s/get-spec :clojure.core.specs/arg-list)))
+  (pprint (s/form (s/get-spec :clojure.core.specs/binding-form)))
+  (pprint (s/form (s/get-spec :clojure.core.specs/map-binding-form)))
+  (pprint (s/form (s/get-spec :clojure.core.specs/map-bindings)))
+  (pprint (s/form (s/get-spec :clojure.core.specs/map-special-binding)))
+  (pprint (s/form (s/get-spec :clojure.core.specs/or)))
+  (pprint (s/form (s/get-spec :clojure.core.specs/map-binding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -177,7 +198,7 @@
   )
 
 (comment
-  (foo 1 2 [[3 4] 5] 6 7 {:baz 8 :bar 9} {})
+  (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
   (pprint-fn-spec reg 'spec-provider.trace/foo 'spec-provider.trace 's)
   (-> reg deref (get "spec-provider.trace/foo") :arg-names)
   )
