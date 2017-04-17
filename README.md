@@ -231,9 +231,9 @@ this into the `person` namespace.
 #### Enumerations
 
 You may have also noticed that role has been identified as an
-enumeration of `:programmer` and `:designer`. To see how its decided
+enumeration of `:programmer` and `:designer`. To see how it's decided
 whether a field is an enumeration or not, we have to look under the
-hood.
+hood. Let's generate a small sample of roles:
 
 ```clojure
 > (gen/sample (s/gen ::role) 5)
@@ -253,9 +253,9 @@ deciding on the spec:
                       :pred-map {#function[clojure.core/keyword?] #:spec-provider.stats{:sample-count 5}}}
 ```
 
-Distinct values observed are collected in a set (up to a certain
+The stats include a set of distinct values observed (up to a certain
 limit), the sample count for each field, and counts on each of the
-predicates that the field matches - in this case just
+predicates that the field matches -- in this case just
 `keyword?`. Based on these statistics, the spec is inferred and a
 decision is made on whether the value is an enumeration or not.
 
@@ -272,7 +272,8 @@ In other words, if the number of distinct values found is less that
 10% of the total recorded values, then the value is an
 enumeration. This threshold is configurable.
 
-For the small sample above:
+Looking at the actual numbers can make this logic easier to
+understand. For the small sample above:
 
 ```clojure
 > (provider/infer-specs (gen/sample (s/gen ::role) 5) ::role)
@@ -280,8 +281,10 @@ For the small sample above:
 ((clojure.spec/def :spec-provider.person-spec/role keyword?))
 ```
 
-We have 2 distinct values in a sample of 5, which is 40%, so no
-confidence that this is in fact an enumeration.
+We have 2 distinct values in a sample of 5, which is 40% of the values
+being distinct. Imagine this percentage in a larger sample, say
+distinct 400 values in a sample of size 2000. That doesn't sound
+likely to be an enumeration, so it's interpreted as a normal value.
 
 If you increase the sample:
 
@@ -292,8 +295,8 @@ If you increase the sample:
 ```
 
 We have 2 distinct values in a sample of 100, which is 2%, which means
-that the same values appear again and again in a large sample, so it
-must be an enumeration.
+that the same values appear again and again in the sample, so it must
+be an enumeration.
 
 #### Merging
 
