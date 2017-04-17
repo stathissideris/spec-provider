@@ -95,13 +95,205 @@ so the calls to `clojure.spec/def` become `s/def` etc.
 
 ### Nested data structures
 
-???
+spec-provider will walk nested data structures in your sample data and
+attempt to infer specs for everything.
 
-### Enumerations
+Let's use clojure.spec to generate a larger sample of data with nested
+structures.
 
-???
+```clojure
+(s/def ::id (s/or :numeric pos-int? :string string?))
+(s/def ::codes (s/coll-of keyword? :max-gen 5))
+(s/def ::first-name string?)
+(s/def ::surname string?)
+(s/def ::k keyword?)
+(s/def ::age (s/with-gen
+               (s/and integer? pos? #(<= % 130))
+               #(gen/int 130)))
+(s/def :person/role #{:programmer :designer})
+(s/def ::phone-number string?)
 
-### Merging
+(s/def ::street string?)
+(s/def ::city string?)
+(s/def ::country string?)
+(s/def ::street-number pos-int?)
+
+(s/def ::address
+  (s/keys :req-un [::street ::city ::country]
+          :opt-un [::street-number]))
+
+(s/def ::person
+  (s/keys :req-un [::id ::first-name ::surname ::k ::age ::address]
+          :opt-un [::phone-number ::codes]
+          :req    [:person/role]))
+```
+
+This spec can be used to generate a reasonably large random sample of
+persons:
+
+```clojure
+(def persons (gen/sample (s/gen ::person) 100))
+```
+
+Which generates structures like:
+
+```clojure
+{:id "d7FMcH52",
+ :first-name "6",
+ :surname "haFsA",
+ :k :a-*?DZ/a,
+ :age 5,
+ :person/role :designer,
+ :address {:street "Yrx963uDy", :city "b", :country "51w5NQ6", :street-number 53},
+ :codes
+ [:*.?m_o-9_j?b.N?_!a+IgUE._coE.S4l4_8_.MhN!5_!x.axztfh.x-/?*
+  :*-DA?+zU-.T0u5R.evD8._r_D!*K0Q.WY-F4--.O*/**O+_Qg+
+  :Bh8-A?t-f]}
+```
+
+Now watch what happens when we infer the spec of `persons`:
+
+```clojure
+> (provider/pprint-specs
+   (provider/infer-specs persons :person/person)
+   'person 's)
+
+(s/def ::codes (s/coll-of keyword?))
+(s/def ::phone-number string?)
+(s/def ::street-number integer?)
+(s/def ::country string?)
+(s/def ::city string?)
+(s/def ::street string?)
+(s/def
+ ::address
+ (s/keys :req-un [::street ::city ::country] :opt-un [::street-number]))
+(s/def ::age integer?)
+(s/def ::k keyword?)
+(s/def ::surname string?)
+(s/def ::first-name string?)
+(s/def ::id (s/or :string string? :integer integer?))
+(s/def ::role #{:programmer :designer})
+(s/def
+ ::person
+ (s/keys
+  :req [::role]
+  :req-un [::id ::first-name ::surname ::k ::age ::address]
+  :opt-un [::phone-number ::codes]))
+```
+
+Which is very close to the original spec. We are going to break down
+this result to bring attention to specific features in the following
+sections.
+
+#### Optional detection
+
+Things like `::street-number`, `::codes` and `::phone-number` did not
+appear consistently in the sampled data, so they are correctly
+identified as optional in the inferred spec.
+
+```clojure
+(s/def
+ ::address
+ (s/keys :req-un [::street ::city ::country] :opt-un [::street-number]))
+```
+
+#### Qualified vs unqualified keys
+
+Most of the keys in the sample data are not qualified, and they are
+detected as such in the inferred spec. The `:person/role` key is
+identified as fully qualified.
+
+```clojure
+(s/def
+ ::person
+ (s/keys
+  :req [::role]
+  :req-un [::id ::first-name ::surname ::k ::age ::address]
+  :opt-un [::phone-number ::codes]))
+```
+
+Note that the `s/def` for role is pretty printed as `::role` because
+when calling `pprint-specs` we indicated that we are going to paste
+this into the `person` namespace.
+
+```clojure
+> (provider/pprint-specs
+   (provider/infer-specs persons :person/person)
+   'person 's)
+
+...
+
+(s/def ::role #{:programmer :designer})
+```
+
+#### Enumerations
+
+You may have also noticed that role has been identified as an
+enumeration of `:programmer` and `:designer`. To see how its decided
+whether a field is an enumeration or not, we have to look under the
+hood.
+
+```clojure
+> (gen/sample (s/gen ::role) 5)
+
+(:designer :designer :designer :designer :programmer)
+```
+
+spec-provider collects statistics about all the sample data before
+deciding on the spec:
+
+```clojure
+> (require '[spec-provider.stats :as stats])
+> (stats/collect-stats (gen/sample (s/gen ::role) 5) {})
+
+#:spec-provider.stats{:distinct-values #{:programmer :designer},
+                      :sample-count 5,
+                      :pred-map {#function[clojure.core/keyword?] #:spec-provider.stats{:sample-count 5}}}
+```
+
+Distinct values observed are collected in a set (up to a certain
+limit), the sample count for each field, and counts on each of the
+predicates that the field matches - in this case just
+`keyword?`. Based on these statistics, the spec is inferred and a
+decision is made on whether the value is an enumeration or not.
+
+If the following statement is true, then the value is considered an
+enumeration:
+
+```clojure
+(>= 0.1
+    (/ (count distinct-values)
+       sample-count))
+```
+
+In other words, if the number of distinct values found is less that
+10% of the total recorded values, then the value is an
+enumeration. This threshold is configurable.
+
+For the small sample above:
+
+```clojure
+> (provider/infer-specs (gen/sample (s/gen ::role) 5) ::role)
+
+((clojure.spec/def :spec-provider.person-spec/role keyword?))
+```
+
+We have 2 distinct values in a sample of 5, which is 40%, so no
+confidence that this is in fact an enumeration.
+
+If you increase the sample:
+
+```clojure
+> (provider/infer-specs (gen/sample (s/gen ::role) 100) ::role)
+
+((clojure.spec/def :spec-provider.person-spec/role #{:programmer :designer}))
+```
+
+We have 2 distinct values in a sample of 100, which is 2%, which means
+that the same values appear again and again in a large sample, so it
+must be an enumeration.
+
+#### Merging
 
 ???
 
