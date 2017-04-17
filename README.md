@@ -21,7 +21,7 @@ change, possibly flawed.
 To use this library, add this dependency to your `project.clj` file:
 
 ```
-[spec-provider "0.3.0"]
+[spec-provider "0.3.1"]
 ```
 
 ## Use cases
