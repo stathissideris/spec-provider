@@ -295,7 +295,36 @@ must be an enumeration.
 
 #### Merging
 
-???
+clojure-spec makes the same assumption as clojure.spec that keys that
+have same name also have the same data shape as their value, even when
+they appear in different maps. This means that the specs from
+different maps are merged by key.
+
+To demonstrate this we need to "spike" the generated persons with an
+id field that's inconsistent with the existing
+`(s/or :numeric pos-int? :string string?)`:
+
+```clojure
+(defn add-inconsistent-id [person]
+  (if (:address person)
+    (assoc-in person [:address :id] (gen/generate (gen/keyword)))
+    person))
+
+(def persons-spiked (map add-inconsistent-id (gen/sample (s/gen ::person) 100)))
+```
+
+Inferring the spec of `persons-spiked` yields a different result for
+ids:
+
+```clojure
+> (provider/pprint-specs
+   (provider/infer-specs persons-spiked :person/person)
+   'person 's)
+
+...
+(s/def ::id (s/or :string string? :integer integer? :keyword keyword?))
+...
+```
 
 ### How it's done
 
