@@ -34,7 +34,7 @@
   (s/keys
    :req [::sample-count]
    :opt [::min ::max ::min-length ::max-length]))
-(s/def ::pred-map (s/map-of any? ::pred-stats))
+(s/def ::pred-map (s/map-of (set preds) ::pred-stats))
 (s/def ::name string?)
 
 (s/def ::keys (s/nilable (s/map-of any? ::stats))) ;;nilable because map may be empty

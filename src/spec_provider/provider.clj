@@ -51,7 +51,10 @@
         (> (count pred-map) 1)
         (concat
          (list 'clojure.spec/or)
-         (mapcat (juxt pred->name pred->form) (map first pred-map)))))
+         (->> (map first pred-map)
+              (map (juxt pred->name pred->form))
+              (sort-by first)
+              (apply concat)))))
 
 (defn- qualified-key? [k] (some? (namespace k)))
 (defn- qualify-key [k ns] (keyword (str ns) (name k)))
@@ -62,6 +65,8 @@
                        (->> keys-stats
                             (filter filter-fn)
                             (mapv #(qualify-key (key %) ns))
+                            sort
+                            vec
                             not-empty))
         req          (extract-keys
                       (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) highest-freq))))
@@ -92,9 +97,11 @@
 
 (defn- summarize-or [stats]
   (concat (list `s/or)
-          (interleave
-           (map (fn [[pred _]] (pred->name pred)) stats)
-           (map (fn [[pred stats]] (summarize-leaf pred stats)) stats))))
+          (->> (map vector
+                    (map (fn [[pred _]] (pred->name pred)) stats)
+                    (map (fn [[pred stats]] (summarize-leaf pred stats)) stats))
+               (sort-by first)
+               (apply concat))))
 
 (defn summarize-stats* [{pred-map            ::stats/pred-map
                          keys-stats          ::stats/keys

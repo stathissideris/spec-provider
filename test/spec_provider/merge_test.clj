@@ -1,6 +1,7 @@
 (ns spec-provider.merge-test
   (:require [spec-provider.merge :refer :all]
             [clojure.test :refer :all]
+            [clojure.spec :as s]
             [clojure.spec.test :as stest]
             [spec-provider.stats :as st]))
 
@@ -8,32 +9,15 @@
                    `merge-pred-stats
                    `merge-pred-map
                    `merge-stats])
-(stest/check [`merge-with-fns
-              `merge-pred-stats
-              `merge-pred-map
-              `merge-stats])
 
-(deftest test-merge-pred-stats
-  (is (= #::st
-         {:sample-count 25
-          :min          2
-          :max          100
-          :min-length   0
-          :max-length   20}
-         (merge-pred-stats
-
-          #::st
-          {:sample-count 15
-           :min          2
-           :max          80
-           :min-length   0
-           :max-length   18}
-          #::st
-          {:sample-count 10
-           :min          10
-           :max          100
-           :min-length   2
-           :max-length   20}))))
+;; (alias 'stc 'clojure.spec.test.check)
+;; (deftest test-check
+;;   (binding [s/*recursion-limit* 3]
+;;     (stest/check [`merge-with-fns
+;;                   `merge-pred-stats
+;;                   `merge-pred-map
+;;                   `merge-stats]
+;;                  {::stc/opts {:num-tests 1}})))
 
 (deftest test-merge-stats
   (is (= #::st
@@ -49,11 +33,11 @@
                                                 :distinct-values ["baz-val"]
                                                 :pred-map {string? #::st {:sample-count 1}}}}
           :pred-map
-          {:a #::st{:sample-count 35
-                    :min          1
-                    :max          100
-                    :min-length   0
-                    :max-length   20}}
+          {string? #::st{:sample-count 35
+                         :min          1
+                         :max          100
+                         :min-length   0
+                         :max-length   20}}
           :hit-distinct-values-limit true
           :hit-key-size-limit        false
           :elements                  [:a :b :c]}
@@ -67,11 +51,11 @@
                                                  :distinct-values ["bar-val"]
                                                  :pred-map {string? #::st {:sample-count 1}}}}
            :pred-map
-           {:a #::st{:sample-count 15
-                     :min          2
-                     :max          80
-                     :min-length   0
-                     :max-length   18}}
+           {string? #::st{:sample-count 15
+                          :min          2
+                          :max          80
+                          :min-length   0
+                          :max-length   18}}
            :hit-distinct-values-limit true
            :hit-key-size-limit        false
            :elements                  [:a :b]}
@@ -84,11 +68,11 @@
                                                  :distinct-values ["baz-val"]
                                                  :pred-map {string? #::st {:sample-count 1}}}}
            :pred-map
-           {:a #::st{:sample-count 20
-                     :min          1
-                     :max          100
-                     :min-length   10
-                     :max-length   20}}
+           {string? #::st{:sample-count 20
+                          :min          1
+                          :max          100
+                          :min-length   10
+                          :max-length   20}}
            :hit-distinct-values-limit false
            :hit-key-size-limit        false
            :elements                  [:c]}))))
