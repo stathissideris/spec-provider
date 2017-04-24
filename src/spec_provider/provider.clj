@@ -95,14 +95,6 @@
      (map #(keyword (str "el" %)) (range))
      (map #(summarize-stats* % spec-ns) (vals (sort-by key stats))))))) ;;TODO extra rules for optional elements
 
-(defn- summarize-or [stats]
-  (concat (list `s/or)
-          (->> (map vector
-                    (map (fn [[pred _]] (pred->name pred)) stats)
-                    (map (fn [[pred stats]] (summarize-leaf pred stats)) stats))
-               (sort-by first)
-               (apply concat))))
-
 (defn summarize-stats* [{pred-map            ::stats/pred-map
                          keys-stats          ::stats/keys
                          elements-coll-stats ::stats/elements-coll
