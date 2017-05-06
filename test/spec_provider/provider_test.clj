@@ -46,7 +46,21 @@
          (infer-specs [{:foo 1 :bar {:baz 2 :boo 3}}] :foo/map)))
   (is (infer-specs (gen/sample (s/gen integer?) 1000) :foo/int))
   (is (infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) :foo/coll-of-ints))
-  (is (infer-specs [:k true (double 1) false '(1 2 3) (float 3) #{} {} (int 5)] ::stuff)) ;;TODO seems like coll of integer overrides everything else
+  (is (= '((clojure.spec/def
+             :spec-provider.provider-test/stuff
+             (clojure.spec/or
+              :collection
+              (clojure.spec/coll-of integer?)
+              :simple
+              (clojure.spec/or
+               :boolean boolean?
+               :double double?
+               :float float?
+               :integer integer?
+               :keyword keyword?
+               :map map?
+               :set set?))))
+         (infer-specs [:k true (double 1) false '(1 2 3) (float 3) #{} {} (int 5)] ::stuff)))
   (testing "order of or"
     (is (= '((clojure.spec/def
                :spec-provider.provider-test/stuff

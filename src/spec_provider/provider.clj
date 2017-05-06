@@ -30,7 +30,6 @@
    integer?    :integer
    keyword?    :keyword
    boolean?    :boolean
-   sequential? :seq
    set?        :set
    map?        :map})
 
@@ -53,6 +52,7 @@
          (list 'clojure.spec/or)
          (->> (map first pred-map)
               (map (juxt pred->name pred->form))
+              (remove (comp nil? first))
               (sort-by first)
               (apply concat)))))
 
@@ -101,24 +101,17 @@
                          elements-pos-stats  ::stats/elements-pos
                          :as                 stats}
                         spec-ns]
-  (cond (and keys-stats elements-coll-stats)
-        (list `s/or
-              :map
-              (summarize-keys keys-stats spec-ns)
-              :collection
-              (summarize-coll-elements elements-coll-stats))
-
-        keys-stats
-        (summarize-keys keys-stats spec-ns)
-
-        elements-coll-stats
-        (summarize-coll-elements elements-coll-stats)
-
-        elements-pos-stats
-        (summarize-pos-elements elements-pos-stats spec-ns)
-
-        :else
-        (summarize-leaf stats)))
+  (let [summaries
+        (remove
+         (comp nil? second)
+         [(when keys-stats [:map (summarize-keys keys-stats spec-ns)])
+          (when elements-coll-stats [:collection (summarize-coll-elements elements-coll-stats)])
+          (when elements-pos-stats [:cat (summarize-pos-elements elements-pos-stats spec-ns)])
+          [:simple (let [s (summarize-leaf stats)]
+                     (if-not (coll? s) s (not-empty s)))]])]
+    (if (= 1 (count summaries))
+      (-> summaries first second)
+      (concat (list `s/or) (apply concat (sort-by first summaries))))))
 
 (defn summarize-stats [stats spec-name]
   (let [spec-ns    (namespace spec-name)
