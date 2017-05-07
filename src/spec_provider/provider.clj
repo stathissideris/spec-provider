@@ -113,6 +113,11 @@
       (-> summaries first second)
       (concat (list `s/or) (apply concat (sort-by first summaries))))))
 
+(defn- maybe-promote-spec [spec]
+  (if (and (seq? spec) (= `s/spec (first spec)))
+    (second spec)
+    spec))
+
 (defn summarize-stats [stats spec-name]
   (let [spec-ns    (namespace spec-name)
         {:keys [order stats]}
@@ -130,7 +135,7 @@
                           (comp (some-fn ::stats/keys ::stats/elements-pos) second)
                           [spec-name stats]))]
     (map (fn [[stat-name stats]]
-           (list `s/def (keyword spec-ns (name stat-name)) (summarize-stats* stats spec-ns)))
+           (list `s/def (keyword spec-ns (name stat-name)) (maybe-promote-spec (summarize-stats* stats spec-ns))))
          (map #(vector % (get stats %)) (distinct order)))))
 
 (defn infer-specs

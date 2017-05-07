@@ -20,18 +20,43 @@
           'domain/foo))))
 
 (deftest infer-specs-test
+  (is (= '((clojure.spec/def :foo/bar integer?)
+           (clojure.spec/def :foo/foo integer?)
+           (clojure.spec/def
+             :foo/stuff
+             (clojure.spec/or
+              :map
+              (clojure.spec/keys :req-un [:foo/bar :foo/foo])
+              :simple
+              (clojure.spec/or :integer integer? :map map?))))
+         (infer-specs [1 2 {:foo 3 :bar 4}] :foo/stuff)))
   (is (= '((clojure.spec/def :foo/vector
              (clojure.spec/coll-of (clojure.spec/or :integer integer? :map map?))))
          (infer-specs [[1 2 {:foo 3 :bar 4}]] :foo/vector)))
   (is (= '((clojure.spec/def :foo/bar integer?)
            (clojure.spec/def :foo/foo integer?)
            (clojure.spec/def :foo/vector
-             (clojure.spec/spec
-              (clojure.spec/cat
-               :el0 integer?
-               :el1 integer?
-               :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo])))))
+             (clojure.spec/cat
+              :el0 integer?
+              :el1 integer?
+              :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo]))))
          (infer-specs [[1 2 {:foo 3 :bar 4}]]
+                      :foo/vector
+                      #::stats{:options #::stats{:positional true}})))
+  (is (= '((clojure.spec/def :foo/bar integer?)
+           (clojure.spec/def :foo/foo integer?)
+           (clojure.spec/def
+             :foo/vector
+             (clojure.spec/cat
+              :el0 integer?
+              :el1 integer?
+              :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo])
+              :el3 (clojure.spec/spec
+                    (clojure.spec/cat
+                     :el0 (clojure.spec/or :double double? :float float?)
+                     :el1 (clojure.spec/or :double double? :float float?)
+                     :el2 (clojure.spec/or :double double? :float float?))))))
+         (infer-specs [[1 2 {:foo 3 :bar 4} [1.2 5.4 3.0]]]
                       :foo/vector
                       #::stats{:options #::stats{:positional true}})))
   (is (= '((clojure.spec/def :foo/boo integer?)
