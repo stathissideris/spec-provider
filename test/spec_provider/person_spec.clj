@@ -9,7 +9,7 @@
 (s/def ::codes (s/coll-of keyword? :max-gen 5))
 (s/def ::first-name string?)
 (s/def ::surname string?)
-(s/def ::k keyword?)
+(s/def ::k (s/nilable keyword?))
 (s/def ::age (s/with-gen
                (s/and integer? pos? #(<= % 130))
                #(gen/int 130)))

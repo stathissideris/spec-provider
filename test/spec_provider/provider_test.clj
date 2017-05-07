@@ -153,7 +153,7 @@
                 :person/address
                 (clojure.spec.alpha/keys :req-un [:person/city :person/country :person/street] :opt-un [:person/street-number]))
               (clojure.spec.alpha/def :person/age integer?)
-              (clojure.spec.alpha/def :person/k keyword?)
+              (clojure.spec.alpha/def :person/k (clojure.spec.alpha/nilable keyword?))
               (clojure.spec.alpha/def :person/surname string?)
               (clojure.spec.alpha/def :person/first-name string?)
               (clojure.spec.alpha/def :person/id (clojure.spec.alpha/or :integer integer? :string string?))
@@ -187,7 +187,7 @@
                  :req-un [:person/city :person/country :person/id :person/street]
                  :opt-un [:person/street-number]))
               (clojure.spec.alpha/def :person/age integer?)
-              (clojure.spec.alpha/def :person/k keyword?)
+              (clojure.spec.alpha/def :person/k (clojure.spec.alpha/nilable keyword?))
               (clojure.spec.alpha/def :person/surname string?)
               (clojure.spec.alpha/def :person/first-name string?)
               (clojure.spec.alpha/def :person/role #{:programmer :designer})

@@ -21,8 +21,10 @@ change, possibly flawed.
 To use this library, add this dependency to your `project.clj` file:
 
 ```
-[spec-provider "0.3.1"]
+[spec-provider "0.4.0"]
 ```
+
+[Version history](https://github.com/stathissideris/spec-provider/blob/master/doc/history.md)
 
 ## Use cases
 
@@ -108,7 +110,7 @@ structures.
 (s/def ::codes (s/coll-of keyword? :max-gen 5))
 (s/def ::first-name string?)
 (s/def ::surname string?)
-(s/def ::k keyword?)
+(s/def ::k (nilable keyword?))
 (s/def ::age (s/with-gen
                (s/and integer? pos? #(<= % 130))
                #(gen/int 130)))
@@ -170,7 +172,7 @@ Now watch what happens when we infer the spec of `persons`:
  ::address
  (s/keys :req-un [::street ::city ::country] :opt-un [::street-number]))
 (s/def ::age integer?)
-(s/def ::k keyword?)
+(s/def ::k (s/nilable keyword?))
 (s/def ::surname string?)
 (s/def ::first-name string?)
 (s/def ::id (s/or :string string? :integer integer?))
@@ -186,6 +188,15 @@ Now watch what happens when we infer the spec of `persons`:
 Which is very close to the original spec. We are going to break down
 this result to bring attention to specific features in the following
 sections.
+
+#### Nilable
+
+If the sample data contain any `nil` values, this is detected and
+reflected in the inferred spec:
+
+```clojure
+(s/def ::k (s/nilable keyword?))
+```
 
 #### Optional detection
 
