@@ -19,7 +19,6 @@
    integer?    'integer?
    keyword?    'keyword?
    boolean?    'boolean?
-   sequential? 'coll-of?
    set?        'set?
    map?        'map?})
 
@@ -33,28 +32,37 @@
    set?        :set
    map?        :map})
 
+(defn- wrap-nilable [nilable? form]
+  (if-not nilable?
+    form
+    (list `s/nilable form)))
+
 (defn summarize-leaf [{:keys [::stats/pred-map
                               ::stats/sample-count
                               ::stats/distinct-values
                               ::stats/hit-distinct-values-limit] :as stats}]
-  (cond (and
-         (not hit-distinct-values-limit)
-         (>= enum-threshold
-             (/ (float (count distinct-values))
-                (float sample-count))))
-        distinct-values
+  (let [nilable? (get pred-map nil?)
+        pred-map (dissoc pred-map nil?)]
+    (cond (and
+           (not hit-distinct-values-limit)
+           (>= enum-threshold
+               (/ (float (count distinct-values))
+                  (float sample-count))))
+          distinct-values
 
-        (= 1 (count pred-map))
-        (pred->form (ffirst pred-map))
+          (= 1 (count pred-map))
+          (wrap-nilable nilable? (pred->form (ffirst pred-map)))
 
-        (> (count pred-map) 1)
-        (concat
-         (list 'clojure.spec/or)
-         (->> (map first pred-map)
-              (map (juxt pred->name pred->form))
-              (remove (comp nil? first))
-              (sort-by first)
-              (apply concat)))))
+          (> (count pred-map) 1)
+          (concat
+           (list 'clojure.spec/or)
+           (->> (map first pred-map)
+                (map (juxt pred->name
+                           (comp (partial wrap-nilable nilable?)
+                                 pred->form)))
+                (remove (comp nil? first))
+                (sort-by first)
+                (apply concat))))))
 
 (defn- qualified-key? [k] (some? (namespace k)))
 (defn- qualify-key [k ns] (keyword (str ns) (name k)))
@@ -101,19 +109,26 @@
                          elements-pos-stats  ::stats/elements-pos
                          :as                 stats}
                         spec-ns]
-  (let [summaries
+  (let [nilable?   (get-in stats [::stats/pred-map nil?])
+        leaf-stats (cond-> stats
+                     keys-stats          (update ::stats/pred-map dissoc map?)
+                     elements-coll-stats (update ::stats/pred-map dissoc sequential?)
+                     elements-pos-stats  (update ::stats/pred-map dissoc sequential?))
+        summaries
         (remove
          (comp nil? second)
-         [(when keys-stats [:map (summarize-keys keys-stats spec-ns)])
-          (when elements-coll-stats [:collection (summarize-coll-elements elements-coll-stats)])
+         [(when keys-stats [:map (wrap-nilable nilable? (summarize-keys keys-stats spec-ns))])
+          (when elements-coll-stats [:collection (wrap-nilable nilable? (summarize-coll-elements elements-coll-stats))])
           (when elements-pos-stats [:cat (summarize-pos-elements elements-pos-stats spec-ns)])
-          [:simple (let [s (summarize-leaf stats)]
+          [:simple (let [s (summarize-leaf leaf-stats)]
                      (if-not (coll? s) s (not-empty s)))]])]
     (if (= 1 (count summaries))
       (-> summaries first second)
       (concat (list `s/or) (apply concat (sort-by first summaries))))))
 
-(defn- maybe-promote-spec [spec]
+(defn- maybe-promote-spec
+  "Promote s/cat to top level if it's wrapped inside a (s/spec ...)"
+  [spec]
   (if (and (seq? spec) (= `s/spec (first spec)))
     (second spec)
     spec))

@@ -13,8 +13,9 @@
 (s/def ::stats-options
   (s/keys :opt-un [::distinct-limit ::coll-limit ::positional ::positional-limit]))
 
-(def preds
-  [string?
+(def ^:dynamic preds
+  [nil?
+   string?
    double?
    float?
    integer?

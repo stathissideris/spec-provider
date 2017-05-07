@@ -20,45 +20,20 @@
           'domain/foo))))
 
 (deftest infer-specs-test
+
   (is (= '((clojure.spec/def :foo/bar integer?)
            (clojure.spec/def :foo/foo integer?)
            (clojure.spec/def
              :foo/stuff
              (clojure.spec/or
-              :map
-              (clojure.spec/keys :req-un [:foo/bar :foo/foo])
-              :simple
-              (clojure.spec/or :integer integer? :map map?))))
+              :map (clojure.spec/keys :req-un [:foo/bar :foo/foo])
+              :simple integer?)))
          (infer-specs [1 2 {:foo 3 :bar 4}] :foo/stuff)))
+
   (is (= '((clojure.spec/def :foo/vector
              (clojure.spec/coll-of (clojure.spec/or :integer integer? :map map?))))
          (infer-specs [[1 2 {:foo 3 :bar 4}]] :foo/vector)))
-  (is (= '((clojure.spec/def :foo/bar integer?)
-           (clojure.spec/def :foo/foo integer?)
-           (clojure.spec/def :foo/vector
-             (clojure.spec/cat
-              :el0 integer?
-              :el1 integer?
-              :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo]))))
-         (infer-specs [[1 2 {:foo 3 :bar 4}]]
-                      :foo/vector
-                      #::stats{:options #::stats{:positional true}})))
-  (is (= '((clojure.spec/def :foo/bar integer?)
-           (clojure.spec/def :foo/foo integer?)
-           (clojure.spec/def
-             :foo/vector
-             (clojure.spec/cat
-              :el0 integer?
-              :el1 integer?
-              :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo])
-              :el3 (clojure.spec/spec
-                    (clojure.spec/cat
-                     :el0 (clojure.spec/or :double double? :float float?)
-                     :el1 (clojure.spec/or :double double? :float float?)
-                     :el2 (clojure.spec/or :double double? :float float?))))))
-         (infer-specs [[1 2 {:foo 3 :bar 4} [1.2 5.4 3.0]]]
-                      :foo/vector
-                      #::stats{:options #::stats{:positional true}})))
+
   (is (= '((clojure.spec/def :foo/boo integer?)
            (clojure.spec/def :foo/baz integer?)
            (clojure.spec/def
@@ -69,23 +44,39 @@
              :foo/map
              (clojure.spec/keys :req-un [:foo/bar :foo/foo])))
          (infer-specs [{:foo 1 :bar {:baz 2 :boo 3}}] :foo/map)))
+
   (is (infer-specs (gen/sample (s/gen integer?) 1000) :foo/int))
+
   (is (infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) :foo/coll-of-ints))
-  (is (= '((clojure.spec/def
-             :spec-provider.provider-test/stuff
-             (clojure.spec/or
-              :collection
-              (clojure.spec/coll-of integer?)
-              :simple
-              (clojure.spec/or
-               :boolean boolean?
-               :double double?
-               :float float?
-               :integer integer?
-               :keyword keyword?
-               :map map?
-               :set set?))))
-         (infer-specs [:k true (double 1) false '(1 2 3) (float 3) #{} {} (int 5)] ::stuff)))
+
+  (testing "positional (cat) specs"
+    (is (= '((clojure.spec/def :foo/bar integer?)
+             (clojure.spec/def :foo/foo integer?)
+             (clojure.spec/def :foo/vector
+               (clojure.spec/cat
+                :el0 integer?
+                :el1 integer?
+                :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo]))))
+           (infer-specs [[1 2 {:foo 3 :bar 4}]]
+                        :foo/vector
+                        #::stats{:options #::stats{:positional true}})))
+    (is (= '((clojure.spec/def :foo/bar integer?)
+             (clojure.spec/def :foo/foo integer?)
+             (clojure.spec/def
+               :foo/vector
+               (clojure.spec/cat
+                :el0 integer?
+                :el1 integer?
+                :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo])
+                :el3 (clojure.spec/spec
+                      (clojure.spec/cat
+                       :el0 (clojure.spec/or :double double? :float float?)
+                       :el1 (clojure.spec/or :double double? :float float?)
+                       :el2 (clojure.spec/or :double double? :float float?))))))
+           (infer-specs [[1 2 {:foo 3 :bar 4} [1.2 5.4 3.0]]]
+                        :foo/vector
+                        #::stats{:options #::stats{:positional true}}))))
+
   (testing "order of or"
     (is (= '((clojure.spec/def
                :spec-provider.provider-test/stuff
@@ -97,7 +88,56 @@
                 :keyword keyword?
                 :map map?
                 :set set?)))
-           (infer-specs [:k true (double 1) false (float 3) #{} {} (int 5)] ::stuff)))))
+           (infer-specs [:k true (double 1) false (float 3) #{} {} (int 5)] ::stuff))))
+
+  (testing "issue #1 - coll-of overrides everything"
+    (is (= '((clojure.spec/def
+               :spec-provider.provider-test/stuff
+               (clojure.spec/or
+                :collection
+                (clojure.spec/coll-of integer?)
+                :simple
+                (clojure.spec/or
+                 :boolean boolean?
+                 :double double?
+                 :float float?
+                 :integer integer?
+                 :keyword keyword?
+                 :map map?
+                 :set set?))))
+           (infer-specs [:k true (double 1) false '(1 2 3) (float 3) #{} {} (int 5)] ::stuff))))
+
+  (testing "nilable"
+    (is (= '((clojure.spec/def ::a
+               (clojure.spec/nilable integer?))
+             (clojure.spec/def ::foo
+               (clojure.spec/keys :req-un [::a])))
+           (infer-specs [{:a 5} {:a nil}] ::foo)))
+    (is (= '((clojure.spec/def ::foo (clojure.spec/nilable integer?)))
+           (infer-specs [1 2 nil] ::foo)))
+    (is (= '((clojure.spec/def ::foo (clojure.spec/coll-of (clojure.spec/nilable integer?))))
+           (infer-specs [[1] [2] [nil]] ::foo)))
+    (is (= '((clojure.spec/def ::foo (clojure.spec/nilable (clojure.spec/coll-of integer?))))
+           (infer-specs [[1] [2] nil] ::foo)))
+    (is (= '((clojure.spec/def ::a integer?)
+             (clojure.spec/def
+               ::foo
+               (clojure.spec/nilable (clojure.spec/keys :req [::a]))))
+           (infer-specs [{::a 9} {::a 10} nil] ::foo)))
+    (testing " with positional"
+      (is (= '((clojure.spec/def :foo/bar integer?)
+               (clojure.spec/def :foo/foo integer?)
+               (clojure.spec/def
+                 :foo/vector
+                 (clojure.spec/cat
+                  :el0 (clojure.spec/nilable integer?)
+                  :el1 integer?
+                  :el2 (clojure.spec/nilable (clojure.spec/keys :req-un [:foo/bar :foo/foo])))))
+             (infer-specs [[1 2 {:foo 3 :bar 4}]
+                           [nil 2 {:foo 3 :bar 4}]
+                           [1 2 nil]]
+                          :foo/vector
+                          #::stats{:options #::stats{:positional true}}))))))
 
 (deftest person-spec-inference-test
   (let [persons (gen/sample (s/gen ::person/person) 100)]
