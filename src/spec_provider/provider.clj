@@ -13,24 +13,24 @@
 (def enum-threshold 0.1)
 
 (def pred->form
-  {string?     'string?
-   double?     'double?
-   float?      'float?
-   integer?    'integer?
-   keyword?    'keyword?
-   boolean?    'boolean?
-   set?        'set?
-   map?        'map?})
+  {string?      'string?
+   double?      'double?
+   stats/float? 'float?
+   integer?     'integer?
+   keyword?     'keyword?
+   boolean?     'boolean?
+   set?         'set?
+   map?         'map?})
 
 (def pred->name
-  {string?     :string
-   double?     :double
-   float?      :float
-   integer?    :integer
-   keyword?    :keyword
-   boolean?    :boolean
-   set?        :set
-   map?        :map})
+  {string?      :string
+   double?      :double
+   stats/float? :float
+   integer?     :integer
+   keyword?     :keyword
+   boolean?     :boolean
+   set?         :set
+   map?         :map})
 
 (defn- wrap-nilable [nilable? form]
   (if-not nilable?

@@ -1,5 +1,10 @@
 # Version history
 
+## Unreleased
+
+* Fix problem where `1.0` would spec'ed as `(s/or :double double? :float float?)`.
+  You now get `double?` unless it's really `(float 1.0)`.
+
 ## 0.4.0
 
 * Infer nilable: collect stats for nil values and wrap with

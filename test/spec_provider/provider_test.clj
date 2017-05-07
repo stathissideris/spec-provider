@@ -70,9 +70,9 @@
                 :el2 (clojure.spec.alpha/keys :req-un [:foo/bar :foo/foo])
                 :el3 (clojure.spec.alpha/spec
                       (clojure.spec.alpha/cat
-                       :el0 (clojure.spec.alpha/or :double double? :float float?)
-                       :el1 (clojure.spec.alpha/or :double double? :float float?)
-                       :el2 (clojure.spec.alpha/or :double double? :float float?))))))
+                       :el0 double?
+                       :el1 double?
+                       :el2 double?)))))
            (infer-specs [[1 2 {:foo 3 :bar 4} [1.2 5.4 3.0]]]
                         :foo/vector
                         #::stats{:options #::stats{:positional true}}))))

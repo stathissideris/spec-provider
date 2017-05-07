@@ -1,4 +1,5 @@
 (ns spec-provider.stats
+  (:refer-clojure :exclude [float?])
   (:require [clojure.spec.alpha :as s]))
 
 (def default-options
@@ -12,6 +13,10 @@
 (s/def ::positional-limit pos-int?)
 (s/def ::stats-options
   (s/keys :opt-un [::distinct-limit ::coll-limit ::positional ::positional-limit]))
+
+(defn float? [x]
+  (and (clojure.core/float? x)
+       (not (double? x))))
 
 (def ^:dynamic preds
   [nil?
