@@ -1,7 +1,7 @@
 (ns spec-provider.provider
-  (:require [clojure.spec :as s]
-            [clojure.spec.gen :as gen]
-            [clojure.spec.test]
+  (:require [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]
+            [clojure.spec.test.alpha]
             [spec-provider.stats :as stats]
             [spec-provider.merge :refer [merge-stats]]
             [clojure.walk :as walk]
@@ -55,7 +55,7 @@
 
           (> (count pred-map) 1)
           (concat
-           (list 'clojure.spec/or)
+           (list 'clojure.spec.alpha/or)
            (->> (map first pred-map)
                 (map (juxt pred->name
                            (comp (partial wrap-nilable nilable?)
@@ -84,7 +84,7 @@
                       (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) highest-freq))))
         opt-un       (extract-keys
                       (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) highest-freq))))]
-    (cond-> (list 'clojure.spec/keys)
+    (cond-> (list 'clojure.spec.alpha/keys)
       req (concat [:req req])
       opt (concat [:opt opt])
       req-un (concat [:req-un req-un])
@@ -168,7 +168,7 @@
         clojure-spec-ns (str clojure-spec-ns)]
     (walk/postwalk
      (fn [x]
-       (cond (and (symbol? x) (= "clojure.spec" (namespace x)))
+       (cond (and (symbol? x) (= "clojure.spec.alpha" (namespace x)))
                (symbol clojure-spec-ns (name x))
              (and (keyword? x) (= domain-ns (namespace x)))
                (symbol (str "::" (name x))) ;;nasty hack to get the printer to print ::foo

@@ -1,13 +1,13 @@
 (ns spec-provider.provider-test
-  (:require [spec-provider.provider :refer :all]
-            [clojure.test :refer :all]
+  (:require [clojure.test :refer :all]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]
+            [spec-provider.provider :refer :all]
             [spec-provider.person-spec :as person]
-            [clojure.spec :as s]
-            [clojure.spec.gen :as gen]
             [spec-provider.stats :as stats]))
 
 (deftest summarize-stats-test
-  (is (= '((clojure.spec/def :domain/foo integer?))
+  (is (= '((clojure.spec.alpha/def :domain/foo integer?))
          (summarize-stats
           #::stats
           {:sample-count 1
@@ -21,28 +21,28 @@
 
 (deftest infer-specs-test
 
-  (is (= '((clojure.spec/def :foo/bar integer?)
-           (clojure.spec/def :foo/foo integer?)
-           (clojure.spec/def
+  (is (= '((clojure.spec.alpha/def :foo/bar integer?)
+           (clojure.spec.alpha/def :foo/foo integer?)
+           (clojure.spec.alpha/def
              :foo/stuff
-             (clojure.spec/or
-              :map (clojure.spec/keys :req-un [:foo/bar :foo/foo])
+             (clojure.spec.alpha/or
+              :map (clojure.spec.alpha/keys :req-un [:foo/bar :foo/foo])
               :simple integer?)))
          (infer-specs [1 2 {:foo 3 :bar 4}] :foo/stuff)))
 
-  (is (= '((clojure.spec/def :foo/vector
-             (clojure.spec/coll-of (clojure.spec/or :integer integer? :map map?))))
+  (is (= '((clojure.spec.alpha/def :foo/vector
+             (clojure.spec.alpha/coll-of (clojure.spec.alpha/or :integer integer? :map map?))))
          (infer-specs [[1 2 {:foo 3 :bar 4}]] :foo/vector)))
 
-  (is (= '((clojure.spec/def :foo/boo integer?)
-           (clojure.spec/def :foo/baz integer?)
-           (clojure.spec/def
+  (is (= '((clojure.spec.alpha/def :foo/boo integer?)
+           (clojure.spec.alpha/def :foo/baz integer?)
+           (clojure.spec.alpha/def
              :foo/bar
-             (clojure.spec/keys :req-un [:foo/baz :foo/boo]))
-           (clojure.spec/def :foo/foo integer?)
-           (clojure.spec/def
+             (clojure.spec.alpha/keys :req-un [:foo/baz :foo/boo]))
+           (clojure.spec.alpha/def :foo/foo integer?)
+           (clojure.spec.alpha/def
              :foo/map
-             (clojure.spec/keys :req-un [:foo/bar :foo/foo])))
+             (clojure.spec.alpha/keys :req-un [:foo/bar :foo/foo])))
          (infer-specs [{:foo 1 :bar {:baz 2 :boo 3}}] :foo/map)))
 
   (is (infer-specs (gen/sample (s/gen integer?) 1000) :foo/int))
@@ -50,37 +50,37 @@
   (is (infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) :foo/coll-of-ints))
 
   (testing "positional (cat) specs"
-    (is (= '((clojure.spec/def :foo/bar integer?)
-             (clojure.spec/def :foo/foo integer?)
-             (clojure.spec/def :foo/vector
-               (clojure.spec/cat
+    (is (= '((clojure.spec.alpha/def :foo/bar integer?)
+             (clojure.spec.alpha/def :foo/foo integer?)
+             (clojure.spec.alpha/def :foo/vector
+               (clojure.spec.alpha/cat
                 :el0 integer?
                 :el1 integer?
-                :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo]))))
+                :el2 (clojure.spec.alpha/keys :req-un [:foo/bar :foo/foo]))))
            (infer-specs [[1 2 {:foo 3 :bar 4}]]
                         :foo/vector
                         #::stats{:options #::stats{:positional true}})))
-    (is (= '((clojure.spec/def :foo/bar integer?)
-             (clojure.spec/def :foo/foo integer?)
-             (clojure.spec/def
+    (is (= '((clojure.spec.alpha/def :foo/bar integer?)
+             (clojure.spec.alpha/def :foo/foo integer?)
+             (clojure.spec.alpha/def
                :foo/vector
-               (clojure.spec/cat
+               (clojure.spec.alpha/cat
                 :el0 integer?
                 :el1 integer?
-                :el2 (clojure.spec/keys :req-un [:foo/bar :foo/foo])
-                :el3 (clojure.spec/spec
-                      (clojure.spec/cat
-                       :el0 (clojure.spec/or :double double? :float float?)
-                       :el1 (clojure.spec/or :double double? :float float?)
-                       :el2 (clojure.spec/or :double double? :float float?))))))
+                :el2 (clojure.spec.alpha/keys :req-un [:foo/bar :foo/foo])
+                :el3 (clojure.spec.alpha/spec
+                      (clojure.spec.alpha/cat
+                       :el0 (clojure.spec.alpha/or :double double? :float float?)
+                       :el1 (clojure.spec.alpha/or :double double? :float float?)
+                       :el2 (clojure.spec.alpha/or :double double? :float float?))))))
            (infer-specs [[1 2 {:foo 3 :bar 4} [1.2 5.4 3.0]]]
                         :foo/vector
                         #::stats{:options #::stats{:positional true}}))))
 
   (testing "order of or"
-    (is (= '((clojure.spec/def
+    (is (= '((clojure.spec.alpha/def
                :spec-provider.provider-test/stuff
-               (clojure.spec/or
+               (clojure.spec.alpha/or
                 :boolean boolean?
                 :double double?
                 :float float?
@@ -91,13 +91,13 @@
            (infer-specs [:k true (double 1) false (float 3) #{} {} (int 5)] ::stuff))))
 
   (testing "issue #1 - coll-of overrides everything"
-    (is (= '((clojure.spec/def
+    (is (= '((clojure.spec.alpha/def
                :spec-provider.provider-test/stuff
-               (clojure.spec/or
+               (clojure.spec.alpha/or
                 :collection
-                (clojure.spec/coll-of integer?)
+                (clojure.spec.alpha/coll-of integer?)
                 :simple
-                (clojure.spec/or
+                (clojure.spec.alpha/or
                  :boolean boolean?
                  :double double?
                  :float float?
@@ -108,31 +108,31 @@
            (infer-specs [:k true (double 1) false '(1 2 3) (float 3) #{} {} (int 5)] ::stuff))))
 
   (testing "nilable"
-    (is (= '((clojure.spec/def ::a
-               (clojure.spec/nilable integer?))
-             (clojure.spec/def ::foo
-               (clojure.spec/keys :req-un [::a])))
+    (is (= '((clojure.spec.alpha/def ::a
+               (clojure.spec.alpha/nilable integer?))
+             (clojure.spec.alpha/def ::foo
+               (clojure.spec.alpha/keys :req-un [::a])))
            (infer-specs [{:a 5} {:a nil}] ::foo)))
-    (is (= '((clojure.spec/def ::foo (clojure.spec/nilable integer?)))
+    (is (= '((clojure.spec.alpha/def ::foo (clojure.spec.alpha/nilable integer?)))
            (infer-specs [1 2 nil] ::foo)))
-    (is (= '((clojure.spec/def ::foo (clojure.spec/coll-of (clojure.spec/nilable integer?))))
+    (is (= '((clojure.spec.alpha/def ::foo (clojure.spec.alpha/coll-of (clojure.spec.alpha/nilable integer?))))
            (infer-specs [[1] [2] [nil]] ::foo)))
-    (is (= '((clojure.spec/def ::foo (clojure.spec/nilable (clojure.spec/coll-of integer?))))
+    (is (= '((clojure.spec.alpha/def ::foo (clojure.spec.alpha/nilable (clojure.spec.alpha/coll-of integer?))))
            (infer-specs [[1] [2] nil] ::foo)))
-    (is (= '((clojure.spec/def ::a integer?)
-             (clojure.spec/def
+    (is (= '((clojure.spec.alpha/def ::a integer?)
+             (clojure.spec.alpha/def
                ::foo
-               (clojure.spec/nilable (clojure.spec/keys :req [::a]))))
+               (clojure.spec.alpha/nilable (clojure.spec.alpha/keys :req [::a]))))
            (infer-specs [{::a 9} {::a 10} nil] ::foo)))
     (testing " with positional"
-      (is (= '((clojure.spec/def :foo/bar integer?)
-               (clojure.spec/def :foo/foo integer?)
-               (clojure.spec/def
+      (is (= '((clojure.spec.alpha/def :foo/bar integer?)
+               (clojure.spec.alpha/def :foo/foo integer?)
+               (clojure.spec.alpha/def
                  :foo/vector
-                 (clojure.spec/cat
-                  :el0 (clojure.spec/nilable integer?)
+                 (clojure.spec.alpha/cat
+                  :el0 (clojure.spec.alpha/nilable integer?)
                   :el1 integer?
-                  :el2 (clojure.spec/nilable (clojure.spec/keys :req-un [:foo/bar :foo/foo])))))
+                  :el2 (clojure.spec.alpha/nilable (clojure.spec.alpha/keys :req-un [:foo/bar :foo/foo])))))
              (infer-specs [[1 2 {:foo 3 :bar 4}]
                            [nil 2 {:foo 3 :bar 4}]
                            [1 2 nil]]
@@ -143,24 +143,24 @@
   (let [persons (gen/sample (s/gen ::person/person) 100)]
     (is (= (into
             #{}
-            '((clojure.spec/def :person/codes (clojure.spec/coll-of keyword?))
-              (clojure.spec/def :person/phone-number string?)
-              (clojure.spec/def :person/street-number integer?)
-              (clojure.spec/def :person/country string?)
-              (clojure.spec/def :person/city string?)
-              (clojure.spec/def :person/street string?)
-              (clojure.spec/def
+            '((clojure.spec.alpha/def :person/codes (clojure.spec.alpha/coll-of keyword?))
+              (clojure.spec.alpha/def :person/phone-number string?)
+              (clojure.spec.alpha/def :person/street-number integer?)
+              (clojure.spec.alpha/def :person/country string?)
+              (clojure.spec.alpha/def :person/city string?)
+              (clojure.spec.alpha/def :person/street string?)
+              (clojure.spec.alpha/def
                 :person/address
-                (clojure.spec/keys :req-un [:person/city :person/country :person/street] :opt-un [:person/street-number]))
-              (clojure.spec/def :person/age integer?)
-              (clojure.spec/def :person/k keyword?)
-              (clojure.spec/def :person/surname string?)
-              (clojure.spec/def :person/first-name string?)
-              (clojure.spec/def :person/id (clojure.spec/or :integer integer? :string string?))
-              (clojure.spec/def :person/role #{:programmer :designer})
-              (clojure.spec/def
+                (clojure.spec.alpha/keys :req-un [:person/city :person/country :person/street] :opt-un [:person/street-number]))
+              (clojure.spec.alpha/def :person/age integer?)
+              (clojure.spec.alpha/def :person/k keyword?)
+              (clojure.spec.alpha/def :person/surname string?)
+              (clojure.spec.alpha/def :person/first-name string?)
+              (clojure.spec.alpha/def :person/id (clojure.spec.alpha/or :integer integer? :string string?))
+              (clojure.spec.alpha/def :person/role #{:programmer :designer})
+              (clojure.spec.alpha/def
                 :person/person
-                (clojure.spec/keys
+                (clojure.spec.alpha/keys
                  :req
                  [:person/role]
                  :req-un
@@ -174,37 +174,37 @@
                      (gen/sample (s/gen ::person/person) 100))]
     (is (= (into
             #{}
-            '((clojure.spec/def :person/codes (clojure.spec/coll-of keyword?))
-              (clojure.spec/def :person/phone-number string?)
-              (clojure.spec/def :person/id (clojure.spec/or :integer integer? :keyword keyword? :string string?))
-              (clojure.spec/def :person/street-number integer?)
-              (clojure.spec/def :person/country string?)
-              (clojure.spec/def :person/city string?)
-              (clojure.spec/def :person/street string?)
-              (clojure.spec/def
+            '((clojure.spec.alpha/def :person/codes (clojure.spec.alpha/coll-of keyword?))
+              (clojure.spec.alpha/def :person/phone-number string?)
+              (clojure.spec.alpha/def :person/id (clojure.spec.alpha/or :integer integer? :keyword keyword? :string string?))
+              (clojure.spec.alpha/def :person/street-number integer?)
+              (clojure.spec.alpha/def :person/country string?)
+              (clojure.spec.alpha/def :person/city string?)
+              (clojure.spec.alpha/def :person/street string?)
+              (clojure.spec.alpha/def
                 :person/address
-                (clojure.spec/keys
+                (clojure.spec.alpha/keys
                  :req-un [:person/city :person/country :person/id :person/street]
                  :opt-un [:person/street-number]))
-              (clojure.spec/def :person/age integer?)
-              (clojure.spec/def :person/k keyword?)
-              (clojure.spec/def :person/surname string?)
-              (clojure.spec/def :person/first-name string?)
-              (clojure.spec/def :person/role #{:programmer :designer})
-              (clojure.spec/def
+              (clojure.spec.alpha/def :person/age integer?)
+              (clojure.spec.alpha/def :person/k keyword?)
+              (clojure.spec.alpha/def :person/surname string?)
+              (clojure.spec.alpha/def :person/first-name string?)
+              (clojure.spec.alpha/def :person/role #{:programmer :designer})
+              (clojure.spec.alpha/def
                 :person/person
-                (clojure.spec/keys
+                (clojure.spec.alpha/keys
                  :req [:person/role]
                  :req-un [:person/address :person/age :person/first-name :person/id :person/k :person/surname]
                  :opt-un [:person/codes :person/phone-number]))))
            (set (infer-specs persons :person/person))))))
 
 (deftest pprint-specs-test
-  (let [specs '[(clojure.spec/def :person/id (clojure.spec/or :numeric pos-int? :string string?))
-                (clojure.spec/def :person/codes (clojure.spec/coll-of keyword? :max-gen 5))
-                (clojure.spec/def :person/first-name string?)
-                (clojure.spec/def :person/surname string?)
-                (clojure.spec/def :person/k keyword?)]]
+  (let [specs '[(clojure.spec.alpha/def :person/id (clojure.spec.alpha/or :numeric pos-int? :string string?))
+                (clojure.spec.alpha/def :person/codes (clojure.spec.alpha/coll-of keyword? :max-gen 5))
+                (clojure.spec.alpha/def :person/first-name string?)
+                (clojure.spec.alpha/def :person/surname string?)
+                (clojure.spec.alpha/def :person/k keyword?)]]
     (is (= (str "(s/def ::id (s/or :numeric pos-int? :string string?))\n"
                 "(s/def ::codes (s/coll-of keyword? :max-gen 5))\n"
                 "(s/def ::first-name string?)\n"

@@ -1,5 +1,5 @@
 (ns spec-provider.stats
-  (:require [clojure.spec :as s]))
+  (:require [clojure.spec.alpha :as s]))
 
 (def default-options
   {::distinct-limit   10

@@ -1,10 +1,10 @@
 (ns spec-provider.merge
   (:require [spec-provider.stats :as st]
             [clojure.set :as set]
-            [clojure.spec :as s]))
+            [clojure.spec.alpha :as s]))
 
 (comment
-  (require '[clojure.spec.test :as stest])
+  (require '[clojure.spec.test.alpha :as stest])
   (stest/instrument `merge-with-fns))
 
 (declare merge-stats)

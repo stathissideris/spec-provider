@@ -1,5 +1,5 @@
 (ns spec-provider.trace
-  (:require [clojure.spec :as s]
+  (:require [clojure.spec.alpha :as s]
             [clojure.walk :as walk]
             [spec-provider.stats :as stats]
             [spec-provider.provider :as provider]))

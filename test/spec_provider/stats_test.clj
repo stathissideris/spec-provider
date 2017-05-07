@@ -1,9 +1,9 @@
 (ns spec-provider.stats-test
-  (:require [spec-provider.stats :refer :all :as stats]
-            [clojure.test :refer :all]
-            [spec-provider.person-spec :as person]
-            [clojure.spec :as s]
-            [clojure.spec.gen :as gen]))
+  (:require [clojure.test :refer :all]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]
+            [spec-provider.stats :refer :all :as stats]
+            [spec-provider.person-spec :as person]))
 
 (deftest collect-stats-test
   (testing "collect vector stats"

@@ -1,8 +1,8 @@
 (ns spec-provider.merge-test
   (:require [spec-provider.merge :refer :all]
             [clojure.test :refer :all]
-            [clojure.spec :as s]
-            [clojure.spec.test :as stest]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.test.alpha :as stest]
             [spec-provider.stats :as st]))
 
 (stest/instrument [`merge-with-fns

@@ -1,6 +1,6 @@
 (ns spec-provider.person-spec
-  (:require [clojure.spec :as s]
-            [clojure.spec.gen :as gen]
+  (:require [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]
             [spec-provider.provider :as provider]
             [spec-provider.stats :as stats]
             [clojure.pprint :refer [pprint]]))

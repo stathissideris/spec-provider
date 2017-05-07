@@ -1,0 +1,11 @@
+* TODO/ideas
+
+** DONE Handle the same key appearing in different depths by merging the
+  stats and summarizing them as a single entity.
+** DONE Collect/infer nilable
+** TODO Move to clojure 1.9.0-alpha16
+** TODO Collect min/max for numbers -> s/int-in
+** TODO Collect min/max length for strings
+** TODO Collect min/max length for sequential
+** TODO Super strict mode that restricts lengths of strings, min/max on numbers, length of lists etc
+** TODO BUG: 6.0 results in (clojure.spec/or :double double? :float float?)

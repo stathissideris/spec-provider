@@ -1,6 +1,6 @@
 (ns dev
   (:require [clojure.test :as test]
-            [clojure.spec.test :as stest]))
+            [clojure.spec.test.alpha :as stest]))
 
 (defn instrument-all []
   (stest/instrument (stest/instrumentable-syms)))
