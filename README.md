@@ -71,10 +71,10 @@ To infer a spec of a bunch of data just pass the data to the
 
 > inferred-specs
 
-((clojure.spec/def :toy/c (clojure.spec/or :keyword keyword? :string string?))
- (clojure.spec/def :toy/b string?)
- (clojure.spec/def :toy/a integer?)
- (clojure.spec/def :toy/small-map (clojure.spec/keys :req-un [:toy/a :toy/b :toy/c])))
+((clojure.spec.alpha/def :toy/c (clojure.spec/or :keyword keyword? :string string?))
+ (clojure.spec.alpha/def :toy/b string?)
+ (clojure.spec.alpha/def :toy/a integer?)
+ (clojure.spec.alpha/def :toy/small-map (clojure.spec/keys :req-un [:toy/a :toy/b :toy/c])))
 ```
 
 The sequence of specs that you get out of `infer-spec` is technically
