@@ -1,7 +1,9 @@
 # Version history
 
-## Unreleased
+## 0.4.1
 
+* Fix issue #7: Merging of key `:spec-provider.stats/elements-coll`
+  of stats of the same key was failing with an NPE.
 * Fix problem where `1.0` would spec'ed as `(s/or :double double? :float float?)`.
   You now get `double?` unless it's really `(float 1.0)`.
 
