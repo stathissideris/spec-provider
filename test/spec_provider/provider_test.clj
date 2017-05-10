@@ -45,6 +45,8 @@
              (clojure.spec.alpha/keys :req-un [:foo/bar :foo/foo])))
          (infer-specs [{:foo 1 :bar {:baz 2 :boo 3}}] :foo/map)))
 
+  (is (infer-specs [{:a {:b [1 2]}} {:b [1]}] ::foo)) ;; issue #7
+
   (is (infer-specs (gen/sample (s/gen integer?) 1000) :foo/int))
 
   (is (infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) :foo/coll-of-ints))

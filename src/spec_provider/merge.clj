@@ -20,6 +20,11 @@
    (fn [a [k v]]
      (if (contains? a k)
        (let [fun (fns k)]
+         (when-not fun
+           (throw (ex-info (str "Don't know how to merge" k)
+                           {:key k
+                            :a   a
+                            :b   b})))
          (assoc a k (fun (get a k) v)))
        (assoc a k v))) a b))
 (s/fdef merge-with-fns
@@ -51,12 +56,26 @@
                      :b ::st/pred-map)
         :ret ::st/pred-map)
 
+(def merge-elements-coll-fns
+  #:spec-provider.stats
+  {:distinct-values into
+   :sample-count    +
+   :pred-map        merge-pred-map})
+
+(defn- merge-elements-coll-stats [a b]
+  (merge-with-fns merge-elements-coll-fns a b))
+(s/fdef merge-elements-coll-stats
+        :args (s/cat :a ::st/elements-coll
+                     :b ::st/elements-coll)
+        :ret ::st/elements-coll)
+
 (def merge-stats-fns
   #:spec-provider.stats
   {:name                      (fn [a _] a)
    :sample-count              +
    :distinct-values           into
    :keys                      merge-keys-stats
+   :elements-coll             merge-elements-coll-stats
    :pred-map                  merge-pred-map
    :hit-distinct-values-limit #(or %1 %2)
    :hit-key-size-limit        #(or %1 %2)
