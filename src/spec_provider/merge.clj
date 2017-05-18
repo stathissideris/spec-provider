@@ -21,7 +21,7 @@
      (if (contains? a k)
        (let [fun (fns k)]
          (when-not fun
-           (throw (ex-info (str "Don't know how to merge" k)
+           (throw (ex-info (str "Don't know how to merge " k)
                            {:key k
                             :a   a
                             :b   b})))
@@ -60,6 +60,7 @@
   #:spec-provider.stats
   {:distinct-values into
    :sample-count    +
+   :keys            merge-keys-stats
    :pred-map        merge-pred-map})
 
 (defn- merge-elements-coll-stats [a b]

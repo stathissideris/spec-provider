@@ -1,5 +1,9 @@
 # Version history
 
+## 0.4.2
+
+* Fix issue #7 more.
+
 ## 0.4.1
 
 * Fix issue #7: Merging of key `:spec-provider.stats/elements-coll`
