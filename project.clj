@@ -1,4 +1,4 @@
-(defproject spec-provider "0.4.2"
+(defproject spec-provider "0.4.3"
   :description "Infer clojure specs from sample data. Inspired by F#'s type providers."
   :url "https://github.com/stathissideris/spec-provider"
   :license {:name "Eclipse Public License"

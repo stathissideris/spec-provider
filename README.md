@@ -21,7 +21,7 @@ change, possibly flawed.
 To use this library, add this dependency to your `project.clj` file:
 
 ```
-[spec-provider "0.4.2"]
+[spec-provider "0.4.3"]
 ```
 
 [Version history](https://github.com/stathissideris/spec-provider/blob/master/doc/history.md)
@@ -341,6 +341,29 @@ ids:
 (s/def ::id (s/or :string string? :integer integer? :keyword keyword?))
 ...
 ```
+
+#### Do I know you from somewhere?
+
+This feature is not illustrated by the person example, but before
+returning them, spec-provider will walk the inferred specs and look
+for forms that already occur elsewhere and replace them with the name
+of the known spec. For example:
+
+```clojure
+> (pprint-specs
+   (infer-specs [{:a [{:zz 1}] :b {:zz 2}}
+                 {:a [{:zz 1} {:zz 4} nil] :b nil}] ::foo) *ns* 's)
+
+(s/def ::zz integer?)
+(s/def ::b (s/nilable (s/keys :req-un [::zz])))
+(s/def ::a (s/coll-of ::b))
+(s/def ::foo (s/keys :req-un [::a ::b]))
+```
+
+In this case, because maps like `{:zz 2}` appear under the key `:b`,
+spec-provider knows what to call them, so it uses that name for
+`(s/def ::a (s/coll-of ::b))`. This replacement is not performed if
+the spec definition is a predicate from the `clojure.core` namespace.
 
 ### How it's done
 

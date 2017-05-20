@@ -8,6 +8,7 @@
   (stest/instrument `merge-with-fns))
 
 (declare merge-stats)
+(declare merge-stats-fns)
 
 (defn- merge-keys-stats [a b]
   (merge-with merge-stats a b))
@@ -16,34 +17,31 @@
   "Like merge-with but the merge function for colliding attributes is
   looked up from a map based on the key."
   [fns a b]
-  (reduce
-   (fn [a [k v]]
-     (if (contains? a k)
-       (let [fun (fns k)]
-         (when-not fun
-           (throw (ex-info (str "Don't know how to merge " k)
-                           {:key k
-                            :a   a
-                            :b   b})))
-         (assoc a k (fun (get a k) v)))
-       (assoc a k v))) a b))
+  (cond
+    (and (nil? a) (nil? b)) nil
+    (nil? a) b
+    (nil? b) a
+    :else
+    (reduce
+     (fn [a [k v]]
+       (if (contains? a k)
+         (let [fun (fns k)]
+           (when-not fun
+             (throw (ex-info (str "Don't know how to merge " k)
+                             {:key k
+                              :a   a
+                              :b   b})))
+           (assoc a k (fun (get a k) v)))
+         (assoc a k v))) a b)))
 (s/fdef merge-with-fns
         :args (s/cat
                :fns (s/map-of keyword? fn?)
-               :a (s/map-of keyword? any?)
-               :b (s/map-of keyword? any?))
+               :a (s/nilable (s/map-of keyword? any?))
+               :b (s/nilable (s/map-of keyword? any?)))
         :ret (s/map-of keyword? any?))
 
-(def merge-pred-fns
-  #:spec-provider.stats
-  {:sample-count +
-   :min          min
-   :max          max
-   :min-length   min
-   :max-length   max})
-
 (defn merge-pred-stats [a b]
-  (merge-with-fns merge-pred-fns a b))
+  (merge-with-fns merge-stats-fns a b))
 (s/fdef merge-pred-stats
         :args (s/cat :a ::st/pred-stats
                      :b ::st/pred-stats)
@@ -56,15 +54,8 @@
                      :b ::st/pred-map)
         :ret ::st/pred-map)
 
-(def merge-elements-coll-fns
-  #:spec-provider.stats
-  {:distinct-values into
-   :sample-count    +
-   :keys            merge-keys-stats
-   :pred-map        merge-pred-map})
-
 (defn- merge-elements-coll-stats [a b]
-  (merge-with-fns merge-elements-coll-fns a b))
+  (merge-with-fns merge-stats-fns a b))
 (s/fdef merge-elements-coll-stats
         :args (s/cat :a ::st/elements-coll
                      :b ::st/elements-coll)
@@ -74,6 +65,10 @@
   #:spec-provider.stats
   {:name                      (fn [a _] a)
    :sample-count              +
+   :min                       min
+   :max                       max
+   :min-length                min
+   :max-length                max
    :distinct-values           into
    :keys                      merge-keys-stats
    :elements-coll             merge-elements-coll-stats

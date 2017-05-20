@@ -150,3 +150,8 @@
         :args (s/cat :data (s/nilable any?)
                      :options (s/? (s/nilable ::stats-options)))
         :ret ::stats)
+
+(defn empty-sequential? [stats]
+  (and (-> stats ::pred-map (get sequential?))
+       (zero? (-> stats ::pred-map (get sequential?) ::min-length))
+       (zero? (-> stats ::pred-map (get sequential?) ::max-length))))

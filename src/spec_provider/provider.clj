@@ -13,14 +13,14 @@
 (def enum-threshold 0.1)
 
 (def pred->form
-  {string?      'string?
-   double?      'double?
-   stats/float? 'float?
-   integer?     'integer?
-   keyword?     'keyword?
-   boolean?     'boolean?
-   set?         'set?
-   map?         'map?})
+  {string?      'clojure.core/string?
+   double?      'clojure.core/double?
+   stats/float? 'clojure.core/float?
+   integer?     'clojure.core/integer?
+   keyword?     'clojure.core/keyword?
+   boolean?     'clojure.core/boolean?
+   set?         'clojure.core/set?
+   map?         'clojure.core/map?})
 
 (def pred->name
   {string?      :string
@@ -43,7 +43,10 @@
                               ::stats/hit-distinct-values-limit] :as stats}]
   (let [nilable? (get pred-map nil?)
         pred-map (dissoc pred-map nil?)]
-    (cond (and
+    (cond (stats/empty-sequential? stats)
+          `empty?
+
+          (and
            (not hit-distinct-values-limit)
            (>= enum-threshold
                (/ (float (count distinct-values))
@@ -90,10 +93,10 @@
       req-un (concat [:req-un req-un])
       opt-un (concat [:opt-un opt-un]))))
 
-(defn- summarize-coll-elements [stats]
-  (list `s/coll-of (summarize-leaf stats)))
-
 (declare summarize-stats*)
+(defn- summarize-coll-elements [stats spec-ns]
+  (list `s/coll-of (summarize-stats* stats spec-ns)))
+
 (defn- summarize-pos-elements [stats spec-ns]
   (list
    `s/spec ;;TODO would nice for this to not happen at top level
@@ -118,7 +121,7 @@
         (remove
          (comp nil? second)
          [(when keys-stats [:map (wrap-nilable nilable? (summarize-keys keys-stats spec-ns))])
-          (when elements-coll-stats [:collection (wrap-nilable nilable? (summarize-coll-elements elements-coll-stats))])
+          (when elements-coll-stats [:collection (wrap-nilable nilable? (summarize-coll-elements elements-coll-stats spec-ns))])
           (when elements-pos-stats [:cat (summarize-pos-elements elements-pos-stats spec-ns)])
           [:simple (let [s (summarize-leaf leaf-stats)]
                      (if-not (coll? s) s (not-empty s)))]])]
@@ -133,25 +136,55 @@
     (second spec)
     spec))
 
+(defn- core? [x]
+  (when (and x (symbol? x)) (= "clojure.core" (namespace x))))
+
+(defn- optimize-named
+  "Replace instances of nested specs that are identical to named
+  specs with the name"
+  [spec named-specs]
+  (walk/postwalk
+   (fn [x]
+     (if (core? x)
+       x ;;don't replace core preds, we are looking for more complex specs
+       (if-let [spec-name (get named-specs x)]
+         spec-name
+         x))) spec))
+
+(defn- flatten-stats [stats spec-name]
+  (let [children (comp (some-fn ::stats/keys
+                                ::stats/elements-pos
+                                (comp ::stats/keys ::stats/elements-coll)) second)]
+   (reduce
+    (fn [flat [stat-name stats :as node]]
+      (if (and (not (number? stat-name)) ;;stat "name" is number for ::stats/elements-pos
+               (::stats/pred-map stats))
+        (-> flat
+            (update :order #(cons stat-name %))
+            ;;TODO warn on "incompatible" merge
+            (update-in [:stats stat-name] #(merge-stats % stats)))
+        flat))
+    {:order ()
+     :stats {}}
+    (tree-seq children children [spec-name stats]))))
+
 (defn summarize-stats [stats spec-name]
-  (let [spec-ns    (namespace spec-name)
-        {:keys [order stats]}
-        (reduce (fn [flat [stat-name stats :as node]]
-                  (if (and (not (number? stat-name)) ;;stat "name" is number for ::stats/elements-pos
-                           (::stats/pred-map stats))
-                    (-> flat
-                        (update :order #(cons stat-name %))
-                        ;;TODO warn on "incompatible" merge
-                        (update-in [:stats stat-name] #(merge-stats % stats)))
-                    flat))
-                {:order ()
-                 :stats {}}
-                (tree-seq (comp (some-fn ::stats/keys ::stats/elements-pos) second)
-                          (comp (some-fn ::stats/keys ::stats/elements-pos) second)
-                          [spec-name stats]))]
-    (map (fn [[stat-name stats]]
-           (list `s/def (keyword spec-ns (name stat-name)) (maybe-promote-spec (summarize-stats* stats spec-ns))))
-         (map #(vector % (get stats %)) (distinct order)))))
+  (let [spec-ns               (namespace spec-name)
+        {:keys [order stats]} (flatten-stats stats spec-name)
+        specs
+        (->> (map #(vector % (get stats %)) (distinct order))
+             (map (fn [[stat-name stats]]
+                    [(keyword spec-ns (name stat-name))
+                     (maybe-promote-spec (summarize-stats* stats spec-ns))])))
+        spec->name
+        (zipmap (map second specs) (map first specs))
+
+        optimized-specs
+        (map (fn [n s] [n (optimize-named s (dissoc spec->name s))])
+             (map first specs) (map second specs))]
+
+    (map (fn [[spec-name spec]]
+           (list `s/def spec-name spec)) optimized-specs)))
 
 (defn infer-specs
   ([data spec-name]
@@ -170,6 +203,8 @@
      (fn [x]
        (cond (and (symbol? x) (= "clojure.spec.alpha" (namespace x)))
                (symbol clojure-spec-ns (name x))
+             (and (symbol? x) (= "clojure.core" (namespace x)))
+               (symbol (name x))
              (and (keyword? x) (= domain-ns (namespace x)))
                (symbol (str "::" (name x))) ;;nasty hack to get the printer to print ::foo
              :else x))

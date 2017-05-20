@@ -1,5 +1,13 @@
 # Version history
 
+## 0.4.3
+
+* Better support for nested sequences, results in deeper specs.
+* "Do I know you from somewhere?": nested specs that are identical
+  with a named spec elsewhere will be replaced by the name of the
+  known spec.
+* Even more fixes for nested structures (Issue #7)
+
 ## 0.4.2
 
 * Fix issue #7 more.
