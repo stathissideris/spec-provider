@@ -1,5 +1,16 @@
 # Version history
 
+## Unreleased
+
+* Rewrite `s/or` where all the options are `nilable` so that the
+  `nilable` wraps the whole form.
+
+## 0.4.4
+
+* Fix handling of sets.
+* Fix handling of empty collections.
+* Infer values that match no known preds as `any?`.
+
 ## 0.4.3
 
 * Better support for nested sequences, results in deeper specs.

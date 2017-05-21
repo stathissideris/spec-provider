@@ -4,6 +4,7 @@
             [clojure.spec.test.alpha]
             [spec-provider.stats :as stats]
             [spec-provider.merge :refer [merge-stats]]
+            [spec-provider.rewrite :as rewrite]
             [clojure.walk :as walk]
             [clojure.pprint :refer [pprint]]))
 
@@ -205,10 +206,13 @@
 
         optimized-specs
         (map (fn [n s] [n (optimize-named s (dissoc spec->name s))])
-             (map first specs) (map second specs))]
+             (map first specs) (map second specs))
 
-    (map (fn [[spec-name spec]]
-           (list `s/def spec-name spec)) optimized-specs)))
+        specs
+        (map (fn [[spec-name spec]]
+               (list `s/def spec-name spec)) optimized-specs)]
+    (-> specs
+        rewrite/all-nilable-or)))
 
 (defn infer-specs
   ([data spec-name]

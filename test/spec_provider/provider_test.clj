@@ -169,7 +169,17 @@
             [{:b #{:a}}
              {:b #{:b}}
              {:a #{:c}}]
-            :foo/stuff)))))
+            :foo/stuff))))
+
+  (testing "rewrite/all-nilable-or"
+    (is (= '((clojure.spec.alpha/def
+               :foo/stuff
+               (clojure.spec.alpha/nilable
+                (clojure.spec.alpha/or
+                 :integer clojure.core/integer?
+                 :keyword clojure.core/keyword?
+                 :string  clojure.core/string?))))
+           (infer-specs [1 :a "stirng" nil] :foo/stuff)))))
 
 (deftest person-spec-inference-test
   (let [persons (gen/sample (s/gen ::person/person) 100)]
