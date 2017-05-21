@@ -161,21 +161,6 @@
     (second spec)
     spec))
 
-(defn- core? [x]
-  (when (and x (symbol? x)) (= "clojure.core" (namespace x))))
-
-(defn- optimize-named
-  "Replace instances of nested specs that are identical to named
-  specs with the name"
-  [spec named-specs]
-  (walk/postwalk
-   (fn [x]
-     (if (core? x)
-       x ;;don't replace core preds, we are looking for more complex specs
-       (if-let [spec-name (get named-specs x)]
-         spec-name
-         x))) spec))
-
 (defn- flatten-stats [stats spec-name]
   (let [children (comp (some-fn ::stats/keys
                                 ::stats/elements-pos
@@ -200,19 +185,12 @@
         (->> (map #(vector % (get stats %)) (distinct order))
              (map (fn [[stat-name stats]]
                     [(keyword spec-ns (name stat-name))
-                     (maybe-promote-spec (summarize-stats* stats spec-ns))])))
-        spec->name
-        (zipmap (map second specs) (map first specs))
-
-        optimized-specs
-        (map (fn [n s] [n (optimize-named s (dissoc spec->name s))])
-             (map first specs) (map second specs))
-
-        specs
-        (map (fn [[spec-name spec]]
-               (list `s/def spec-name spec)) optimized-specs)]
+                     (maybe-promote-spec (summarize-stats* stats spec-ns))]))
+             (map (fn [[spec-name spec]]
+                    (list `s/def spec-name spec))))]
     (-> specs
-        rewrite/all-nilable-or)))
+        rewrite/all-nilable-or
+        rewrite/known-names)))
 
 (defn infer-specs
   ([data spec-name]

@@ -29,3 +29,31 @@
        (all-nilable-or* form)
        form))
    form))
+
+(defn- spec-name [x]
+  (second x))
+
+(defn- spec-body [x]
+  (nth x 2))
+
+(defn- core? [x]
+  (when (and x (symbol? x)) (= "clojure.core" (namespace x))))
+
+(defn known-names
+  "Replace instances of nested specs that are identical to named
+  specs with the name"
+  [specs]
+  (let [form->name (zipmap (map spec-body specs)
+                           (map spec-name specs))]
+    (map
+     (fn [spec]
+       (let [form->name (dissoc form->name (spec-body spec))]
+        (walk/postwalk
+         (fn [x]
+           (if (core? x)
+             x ;;don't replace core preds, we are looking for more complex specs
+             (if-let [spec-name (get form->name x)]
+               spec-name
+               x)))
+         spec)))
+     specs)))
