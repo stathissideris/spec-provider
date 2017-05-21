@@ -93,30 +93,31 @@
     (is (= '((clojure.spec.alpha/def
                :spec-provider.provider-test/stuff
                (clojure.spec.alpha/or
-                :boolean clojure.core/boolean?
-                :double  clojure.core/double?
-                :float   clojure.core/float?
-                :integer clojure.core/integer?
-                :keyword clojure.core/keyword?
-                :map     clojure.core/map?
-                :set     clojure.core/set?)))
-           (infer-specs [:k true (double 1) false (float 3) #{} {} (int 5)] ::stuff))))
-
-  (testing "issue #1 - coll-of overrides everything"
-    (is (= '((clojure.spec.alpha/def
-               :spec-provider.provider-test/stuff
-               (clojure.spec.alpha/or
-                :collection
-                (clojure.spec.alpha/coll-of clojure.core/integer?)
+                :map clojure.core/map?
+                :set (clojure.spec.alpha/coll-of clojure.core/any? :kind clojure.core/set?)
                 :simple
                 (clojure.spec.alpha/or
                  :boolean clojure.core/boolean?
                  :double  clojure.core/double?
                  :float   clojure.core/float?
                  :integer clojure.core/integer?
-                 :keyword clojure.core/keyword?
-                 :map     clojure.core/map?
-                 :set     clojure.core/set?))))
+                 :keyword clojure.core/keyword?))))
+           (infer-specs [:k true (double 1) false (float 3) #{} {} (int 5)] ::stuff))))
+
+  (testing "issue #1 - coll-of overrides everything"
+    (is (= '((clojure.spec.alpha/def
+               :spec-provider.provider-test/stuff
+               (clojure.spec.alpha/or
+                :collection (clojure.spec.alpha/coll-of clojure.core/integer?)
+                :map clojure.core/map?
+                :set (clojure.spec.alpha/coll-of clojure.core/any? :kind clojure.core/set?)
+                :simple
+                (clojure.spec.alpha/or
+                 :boolean clojure.core/boolean?
+                 :double  clojure.core/double?
+                 :float   clojure.core/float?
+                 :integer clojure.core/integer?
+                 :keyword clojure.core/keyword?))))
            (infer-specs [:k true (double 1) false '(1 2 3) (float 3) #{} {} (int 5)] ::stuff))))
 
   (testing "nilable"
@@ -158,7 +159,17 @@
              (clojure.spec.alpha/def :foo/a (clojure.spec.alpha/coll-of :foo/b))
              (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/a :foo/b])))
            (infer-specs [{:a [{:zz 1}] :b {:zz 2}}
-                         {:a [{:zz 1} {:zz 4} nil] :b nil}] :foo/stuff)))))
+                         {:a [{:zz 1} {:zz 4} nil] :b nil}] :foo/stuff))))
+
+  (testing "sets"
+    (is (= '((clojure.spec.alpha/def :foo/a (clojure.spec.alpha/coll-of clojure.core/keyword? :kind clojure.core/set?))
+             (clojure.spec.alpha/def :foo/b (clojure.spec.alpha/coll-of clojure.core/keyword? :kind clojure.core/set?))
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/b] :opt-un [:foo/a])))
+           (infer-specs
+            [{:b #{:a}}
+             {:b #{:b}}
+             {:a #{:c}}]
+            :foo/stuff)))))
 
 (deftest person-spec-inference-test
   (let [persons (gen/sample (s/gen ::person/person) 100)]

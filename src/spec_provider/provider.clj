@@ -13,24 +13,26 @@
 (def enum-threshold 0.1)
 
 (def pred->form
-  {string?      'clojure.core/string?
-   double?      'clojure.core/double?
-   stats/float? 'clojure.core/float?
-   integer?     'clojure.core/integer?
-   keyword?     'clojure.core/keyword?
-   boolean?     'clojure.core/boolean?
-   set?         'clojure.core/set?
-   map?         'clojure.core/map?})
+  {string?                  `string?
+   double?                  `double?
+   stats/float?             `float?
+   integer?                 `integer?
+   keyword?                 `keyword?
+   boolean?                 `boolean?
+   set?                     `set?
+   map?                     `map?
+   stats/none-of-the-above? `any?})
 
 (def pred->name
-  {string?      :string
-   double?      :double
-   stats/float? :float
-   integer?     :integer
-   keyword?     :keyword
-   boolean?     :boolean
-   set?         :set
-   map?         :map})
+  {string?                  :string
+   double?                  :double
+   stats/float?             :float
+   integer?                 :integer
+   keyword?                 :keyword
+   boolean?                 :boolean
+   set?                     :set
+   map?                     :map
+   stats/none-of-the-above? :any})
 
 (defn- wrap-nilable [nilable? form]
   (if-not nilable?
@@ -42,9 +44,9 @@
                               ::stats/distinct-values
                               ::stats/hit-distinct-values-limit] :as stats}]
   (let [nilable? (get pred-map nil?)
-        pred-map (dissoc pred-map nil?)]
+        pred-map (dissoc pred-map nil? set?)]
     (cond (stats/empty-sequential? stats)
-          `empty?
+          `seq? ;;don't enforce empty
 
           (and
            (not hit-distinct-values-limit)
@@ -63,7 +65,7 @@
                 (map (juxt pred->name
                            (comp (partial wrap-nilable nilable?)
                                  pred->form)))
-                (remove (comp nil? first))
+                ;;(remove (comp nil? first))
                 (sort-by first)
                 (apply concat))))))
 
@@ -71,27 +73,34 @@
 (defn- qualify-key [k ns] (keyword (str ns) (name k)))
 
 (defn summarize-keys [keys-stats ns]
-  (let [highest-freq (apply max (map ::stats/sample-count (vals keys-stats)))
-        extract-keys (fn [filter-fn]
-                       (->> keys-stats
-                            (filter filter-fn)
-                            (mapv #(qualify-key (key %) ns))
-                            sort
-                            vec
-                            not-empty))
-        req          (extract-keys
-                      (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) highest-freq))))
-        opt          (extract-keys
-                      (fn [[k v]] (and (qualified-key? k) (< (::stats/sample-count v) highest-freq))))
-        req-un       (extract-keys
-                      (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) highest-freq))))
-        opt-un       (extract-keys
-                      (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) highest-freq))))]
-    (cond-> (list 'clojure.spec.alpha/keys)
-      req (concat [:req req])
-      opt (concat [:opt opt])
-      req-un (concat [:req-un req-un])
-      opt-un (concat [:opt-un opt-un]))))
+  (if (empty? keys-stats)
+    `map? ;;don't enforce empty?
+    (let [highest-freq (apply max (map ::stats/sample-count (vals keys-stats)))
+          extract-keys (fn [filter-fn]
+                         (->> keys-stats
+                              (filter filter-fn)
+                              (mapv #(qualify-key (key %) ns))
+                              sort
+                              vec
+                              not-empty))
+          req          (extract-keys
+                        (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) highest-freq))))
+          opt          (extract-keys
+                        (fn [[k v]] (and (qualified-key? k) (< (::stats/sample-count v) highest-freq))))
+          req-un       (extract-keys
+                        (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) highest-freq))))
+          opt-un       (extract-keys
+                        (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) highest-freq))))]
+      (cond-> (list 'clojure.spec.alpha/keys)
+        req (concat [:req req])
+        opt (concat [:opt opt])
+        req-un (concat [:req-un req-un])
+        opt-un (concat [:opt-un opt-un])))))
+
+(defn- add-kind [kind spec]
+  (if (and (list? spec) kind)
+    (concat spec (list :kind kind))
+    spec))
 
 (declare summarize-stats*)
 (defn- summarize-coll-elements [stats spec-ns]
@@ -110,6 +119,7 @@
                          keys-stats          ::stats/keys
                          elements-coll-stats ::stats/elements-coll
                          elements-pos-stats  ::stats/elements-pos
+                         elements-set-stats  ::stats/elements-set
                          :as                 stats}
                         spec-ns]
   (let [nilable?   (get-in stats [::stats/pred-map nil?])
@@ -121,13 +131,27 @@
         (remove
          (comp nil? second)
          [(when keys-stats [:map (wrap-nilable nilable? (summarize-keys keys-stats spec-ns))])
-          (when elements-coll-stats [:collection (wrap-nilable nilable? (summarize-coll-elements elements-coll-stats spec-ns))])
+          (when elements-coll-stats
+            [:collection
+             (->> (summarize-coll-elements elements-coll-stats spec-ns)
+                  (wrap-nilable nilable?))])
           (when elements-pos-stats [:cat (summarize-pos-elements elements-pos-stats spec-ns)])
+          (when elements-set-stats
+            [:set
+             (->> (summarize-coll-elements elements-set-stats spec-ns)
+                  (wrap-nilable nilable?)
+                  (add-kind `set?))])
           [:simple (let [s (summarize-leaf leaf-stats)]
                      (if-not (coll? s) s (not-empty s)))]])]
-    (if (= 1 (count summaries))
-      (-> summaries first second)
-      (concat (list `s/or) (apply concat (sort-by first summaries))))))
+    (cond (and (zero? (count summaries))
+               (or elements-coll-stats elements-pos-stats elements-set-stats))
+          `empty?
+          (zero? (count summaries))
+          `any?
+          (= 1 (count summaries))
+          (-> summaries first second)
+          :else
+          (concat (list `s/or) (apply concat (sort-by first summaries))))))
 
 (defn- maybe-promote-spec
   "Promote s/cat to top level if it's wrapped inside a (s/spec ...)"
@@ -194,7 +218,9 @@
      (throw
       (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
                {:spec-name spec-name})))
-   (summarize-stats (stats/collect-stats data (::stats/options options)) spec-name)))
+   (let [stats (stats/collect-stats data (::stats/options options))]
+     (s/valid? ::stats/stats stats)
+     (summarize-stats stats spec-name))))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
   (let [domain-ns (str domain-ns)

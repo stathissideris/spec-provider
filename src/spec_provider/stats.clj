@@ -18,6 +18,20 @@
   (and (clojure.core/float? x)
        (not (double? x))))
 
+(def none-of-the-above?
+  (complement
+   (some-fn
+    nil?
+    string?
+    double?
+    float?
+    integer?
+    keyword?
+    boolean?
+    sequential?
+    set?
+    map?)))
+
 (def ^:dynamic preds
   [nil?
    string?
@@ -28,7 +42,8 @@
    boolean?
    sequential?
    set?
-   map?])
+   map?
+   none-of-the-above?])
 
 (s/def ::distinct-values (s/* any?))
 (s/def ::sample-count nat-int?)
@@ -88,23 +103,33 @@
 
 (declare update-stats)
 (defn update-keys-stats [keys-stats x options]
-  (if-not (map? x)
-    keys-stats
-    (reduce-kv
-     (fn [stats k v]
-       (update stats k update-stats v options))
-     keys-stats x)))
+  (cond (not (map? x))
+        keys-stats
+
+        (empty? x)
+        {}
+
+        :else
+        (reduce-kv
+         (fn [stats k v]
+           (update stats k update-stats v options))
+         keys-stats x)))
 (s/fdef update-keys-stats
         :args (s/cat :keys (s/nilable ::keys) :value any? :options ::stats-options)
         :ret ::keys)
 
 (defn update-coll-stats [stats x {:keys [::coll-limit] :as options}]
-  (if-not (sequential? x)
-    stats
-    (reduce
-     (fn [stats element]
-       (update-stats stats element options))
-     stats (take coll-limit x))))
+  (cond (not (or (sequential? x) (set? x)))
+        stats
+
+        (empty? x)
+        (update-stats stats ::empty options)
+
+        :else
+        (reduce
+         (fn [stats element]
+           (update-stats stats element options))
+         stats (take coll-limit x))))
 
 (defn update-positional-stats [stats x {:keys [::positional-limit] :as options}]
   (if-not (sequential? x)
@@ -121,22 +146,27 @@
 (s/fdef empty-stats :ret ::stats)
 
 (defn update-stats [stats x options]
-  (let [{:keys [::positional ::distinct-limit] :as options}
-        (merge default-options options)]
+  (if (= ::empty x)
     (-> (or stats (empty-stats))
-        (update ::sample-count safe-inc)
-        (update ::pred-map update-pred-map x)
-        (cond->
-            (map? x)
-          (update ::keys update-keys-stats x options)
-          (and positional (sequential? x))
-          (update ::elements-pos update-positional-stats x options)
-          (and (not positional) (sequential? x))
-          (update ::elements-coll update-coll-stats x options)
-          (and (not (coll? x)) (-> stats ::distinct-values count (< distinct-limit))) ;;TODO optimize
-          (update ::distinct-values safe-set-conj x)
-          (and (not (coll? x)) (-> stats ::distinct-values count (>= distinct-limit)))
-          (assoc ::hit-distinct-values-limit true)))))
+        (update ::sample-count safe-inc))
+    (let [{:keys [::positional ::distinct-limit] :as options}
+          (merge default-options options)]
+      (-> (or stats (empty-stats))
+          (update ::sample-count safe-inc)
+          (update ::pred-map update-pred-map x)
+          (cond->
+              (map? x)
+            (update ::keys update-keys-stats x options)
+            (and positional (sequential? x))
+            (update ::elements-pos update-positional-stats x options)
+            (and (not positional) (sequential? x))
+            (update ::elements-coll update-coll-stats x options)
+            (and (not positional) (set? x))
+            (update ::elements-set update-coll-stats x options)
+            (and (not (coll? x)) (-> stats ::distinct-values count (< distinct-limit))) ;;TODO optimize
+            (update ::distinct-values safe-set-conj x)
+            (and (not (coll? x)) (-> stats ::distinct-values count (>= distinct-limit)))
+            (assoc ::hit-distinct-values-limit true))))))
 (s/fdef update-stats
         :args (s/cat :stats (s/nilable ::stats) :value any? :options (s/? (s/nilable ::stats-options)))
         :ret ::stats)
