@@ -1,9 +1,10 @@
 # Version history
 
-## Unreleased
+## 0.4.5
 
 * Rewrite `s/or` where all the options are `nilable` so that the
   `nilable` wraps the whole form.
+* Fix sets merging (still under issue #7).
 
 ## 0.4.4
 
