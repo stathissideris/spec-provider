@@ -169,7 +169,22 @@
             [{:b #{:a}}
              {:b #{:b}}
              {:a #{:c}}]
-            :foo/stuff))))
+            :foo/stuff)))
+    (is (= '((clojure.spec.alpha/def
+               :foo/b (clojure.spec.alpha/coll-of clojure.core/string? :kind clojure.core/set?))
+             (clojure.spec.alpha/def :foo/a (clojure.spec.alpha/keys :req-un [:foo/b]))
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/a :foo/b])))
+           (infer-specs
+            [{:a {:b #{"string 1" "string 2"}}} {:b #{"string 3"}}] :foo/stuff)))
+    (is (= '((clojure.spec.alpha/def
+               :foo/b (clojure.spec.alpha/coll-of
+                       (clojure.spec.alpha/or :keyword clojure.core/keyword?
+                                              :string clojure.core/string?)
+                       :kind clojure.core/set?))
+             (clojure.spec.alpha/def :foo/a (clojure.spec.alpha/keys :req-un [:foo/b]))
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/a :foo/b])))
+           (infer-specs
+            [{:a {:b #{:a "string 2"}}} {:b #{"string 3"}}] :foo/stuff))))
 
   (testing "rewrite/all-nilable-or"
     (is (= '((clojure.spec.alpha/def
@@ -179,7 +194,7 @@
                  :integer clojure.core/integer?
                  :keyword clojure.core/keyword?
                  :string  clojure.core/string?))))
-           (infer-specs [1 :a "stirng" nil] :foo/stuff)))))
+           (infer-specs [1 :a "string" nil] :foo/stuff)))))
 
 (deftest person-spec-inference-test
   (let [persons (gen/sample (s/gen ::person/person) 100)]

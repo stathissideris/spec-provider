@@ -72,6 +72,7 @@
    :distinct-values           into
    :keys                      merge-keys-stats
    :elements-coll             merge-elements-coll-stats
+   :elements-set              merge-elements-coll-stats
    :pred-map                  merge-pred-map
    :hit-distinct-values-limit #(or %1 %2)
    :hit-key-size-limit        #(or %1 %2)
