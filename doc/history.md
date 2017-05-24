@@ -1,5 +1,9 @@
 # Version history
 
+## 0.4.6
+
+* Minor fix for nilable sets.
+
 ## 0.4.5
 
 * Rewrite `s/or` where all the options are `nilable` so that the
