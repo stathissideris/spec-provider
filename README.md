@@ -21,7 +21,7 @@ change, possibly flawed.
 To use this library, add this dependency to your `project.clj` file:
 
 ```
-[spec-provider "0.4.6"]
+[spec-provider "0.4.7"]
 ```
 
 [Version history](https://github.com/stathissideris/spec-provider/blob/master/doc/history.md)
