@@ -17,7 +17,7 @@
                        :min 6
                        :max 6}}
            :distinct-values #{6}}
-          'domain/foo))))
+          :domain/foo))))
 
 (deftest infer-specs-test
 
@@ -60,6 +60,38 @@
   (is (infer-specs (gen/sample (s/gen integer?) 1000) :foo/int))
 
   (is (infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) :foo/coll-of-ints))
+
+  (testing "maps that don't have keywords as keys"
+    (is (= '((clojure.spec.alpha/def
+               :foo/stuff
+               (clojure.spec.alpha/map-of clojure.core/string? clojure.core/integer?)))
+           (infer-specs [{"a" 3}
+                         {"b" 4}] :foo/stuff)))
+    (is (= '((clojure.spec.alpha/def
+               :foo/stuff
+               (clojure.spec.alpha/map-of
+                (clojure.spec.alpha/coll-of
+                 (clojure.spec.alpha/nilable
+                  (clojure.spec.alpha/or :integer clojure.core/integer? :keyword clojure.core/keyword?)))
+                clojure.core/integer?)))
+           (infer-specs [{[8 :a] 3}
+                         {[nil :b] 4}] :foo/stuff)))
+    (testing "- mixed"
+      (is (= '((clojure.spec.alpha/def :foo/a clojure.core/integer?)
+               (clojure.spec.alpha/def
+                 :foo/stuff
+                 (clojure.spec.alpha/or
+                  :non-keyword-map
+                  (clojure.spec.alpha/map-of clojure.core/integer? clojure.core/integer?)
+                  :keyword-map
+                  (clojure.spec.alpha/keys :req-un [:foo/a]))))
+           (infer-specs [{:a 4}
+                         {4 4}] :foo/stuff))))
+
+    ;;TODO this case does not work as expected (a is not promoted to top-level as a named spec):
+    ;; (infer-specs [{{:a 4} 3}
+    ;;               {{:a 8} 4}] ::foo)
+    )
 
   (testing "positional (cat) specs"
     (is (= '((clojure.spec.alpha/def :foo/bar clojure.core/integer?)
@@ -184,7 +216,15 @@
              (clojure.spec.alpha/def :foo/a (clojure.spec.alpha/keys :req-un [:foo/b]))
              (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/a :foo/b])))
            (infer-specs
-            [{:a {:b #{:a "string 2"}}} {:b #{"string 3"}}] :foo/stuff))))
+            [{:a {:b #{:a "string 2"}}} {:b #{"string 3"}}] :foo/stuff)))
+
+    (testing "- nilable"
+      (is (= '((clojure.spec.alpha/def
+                 :foo/a
+                 (clojure.spec.alpha/nilable
+                  (clojure.spec.alpha/coll-of clojure.core/integer? :kind clojure.core/set?)))
+               (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/a])))
+             (infer-specs [{:a #{1}} {:a nil}] :foo/stuff)))))
 
   (testing "rewrite/all-nilable-or"
     (is (= '((clojure.spec.alpha/def

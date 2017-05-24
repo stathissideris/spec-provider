@@ -22,6 +22,7 @@
    boolean?                 `boolean?
    set?                     `set?
    map?                     `map?
+   symbol?                  `symbol?
    stats/none-of-the-above? `any?})
 
 (def pred->name
@@ -33,6 +34,7 @@
    boolean?                 :boolean
    set?                     :set
    map?                     :map
+   symbol?                  :symbol
    stats/none-of-the-above? :any})
 
 (defn- wrap-nilable [nilable? form]
@@ -73,7 +75,13 @@
 (defn- qualified-key? [k] (some? (namespace k)))
 (defn- qualify-key [k ns] (keyword (str ns) (name k)))
 
-(defn summarize-keys [keys-stats ns]
+(declare summarize-stats*)
+(defn- summarize-non-keyword-map [keys-stats ns]
+  (list `s/map-of
+        (summarize-stats* (stats/collect-stats (keys keys-stats)) ns)
+        (summarize-stats* (reduce merge-stats (vals keys-stats)) ns)))
+
+(defn- summarize-keys [keys-stats ns]
   (if (empty? keys-stats)
     `map? ;;don't enforce empty?
     (let [highest-freq (apply max (map ::stats/sample-count (vals keys-stats)))
@@ -92,11 +100,29 @@
                         (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) highest-freq))))
           opt-un       (extract-keys
                         (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) highest-freq))))]
-      (cond-> (list 'clojure.spec.alpha/keys)
+      (cond-> (list `s/keys)
         req (concat [:req req])
         opt (concat [:opt opt])
         req-un (concat [:req-un req-un])
         opt-un (concat [:opt-un opt-un])))))
+
+(defn- keyword-key-stats [key-stats]
+  (reduce-kv (fn [m k v] (if (keyword? k) (assoc m k v) m)) {} key-stats))
+
+(defn- non-keyword-key-stats [key-stats]
+  (reduce-kv (fn [m k v] (if-not (keyword? k) (assoc m k v) m)) {} key-stats))
+
+(defn- summarize-map-stats [keys-stats ns]
+  (cond (every? keyword? (keys keys-stats))
+        (summarize-keys keys-stats ns)
+        (every? (complement keyword?) (keys keys-stats))
+        (summarize-non-keyword-map keys-stats ns)
+        :else
+        (list `s/or
+              :non-keyword-map
+              (summarize-non-keyword-map (non-keyword-key-stats keys-stats) ns)
+              :keyword-map
+              (summarize-keys (keyword-key-stats keys-stats) ns))))
 
 (defn- add-kind [kind spec]
   (if (and (list? spec) kind)
@@ -131,7 +157,7 @@
         summaries
         (remove
          (comp nil? second)
-         [(when keys-stats [:map (wrap-nilable nilable? (summarize-keys keys-stats spec-ns))])
+         [(when keys-stats [:map (wrap-nilable nilable? (summarize-map-stats keys-stats spec-ns))])
           (when elements-coll-stats
             [:collection
              (->> (summarize-coll-elements elements-coll-stats spec-ns)
@@ -154,7 +180,7 @@
           :else
           (concat (list `s/or) (apply concat (sort-by first summaries))))))
 
-(defn- maybe-promote-spec
+(defn- maybe-promote-spec ;;TODO move to rewrite namespace
   "Promote s/cat to top level if it's wrapped inside a (s/spec ...)"
   [spec]
   (if (and (seq? spec) (= `s/spec (first spec)))
@@ -167,7 +193,7 @@
                                 (comp ::stats/keys ::stats/elements-coll)) second)]
    (reduce
     (fn [flat [stat-name stats :as node]]
-      (if (and (not (number? stat-name)) ;;stat "name" is number for ::stats/elements-pos
+      (if (and (keyword? stat-name) ;;stat "name" is number for ::stats/elements-pos
                (::stats/pred-map stats))
         (-> flat
             (update :order #(cons stat-name %))
@@ -191,6 +217,9 @@
     (-> specs
         rewrite/all-nilable-or
         rewrite/known-names)))
+(s/fdef summarize-stats
+        :args (s/cat :stats (s/nilable ::stats/stats)
+                     :spec-name qualified-keyword?))
 
 (defn infer-specs
   ([data spec-name]
