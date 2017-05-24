@@ -140,8 +140,8 @@
           (when elements-set-stats
             [:set
              (->> (summarize-coll-elements elements-set-stats spec-ns)
-                  (wrap-nilable nilable?)
-                  (add-kind `set?))])
+                  (add-kind `set?)
+                  (wrap-nilable nilable?))])
           [:simple (let [s (summarize-leaf leaf-stats)]
                      (if-not (coll? s) s (not-empty s)))]])]
     (cond (and (zero? (count summaries))
