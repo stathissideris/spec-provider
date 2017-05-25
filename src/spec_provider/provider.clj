@@ -11,7 +11,7 @@
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an
 ;;enumeration
-(def enum-threshold 0.1)
+(def ^:dynamic enum-threshold 0.1)
 
 (def pred->form
   {string?                  `string?
@@ -56,7 +56,7 @@
            (>= enum-threshold
                (/ (float (count distinct-values))
                   (float sample-count))))
-          distinct-values
+          (wrap-nilable nilable? (disj distinct-values nil))
 
           (= 1 (count pred-map))
           (wrap-nilable nilable? (pred->form (ffirst pred-map)))
