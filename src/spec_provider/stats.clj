@@ -123,14 +123,12 @@
         keys-stats
 
         (empty? x)
-        {}
+        keys-stats
 
         :else
         (reduce-kv
          (fn [stats k v]
-           (if (keyword? k)
-             (update stats k update-stats v options)
-             stats))
+           (update stats k update-stats v options))
          keys-stats x)))
 (s/fdef update-keys-stats
         :args (s/cat :keys (s/nilable ::keys) :value any? :options ::stats-options)
@@ -154,7 +152,7 @@
   (-> map-stats
       (update ::sample-count safe-inc)
       (update (map-type x) safe-inc)
-      (update ::keys #(update-keys-stats % x options))))
+      (update ::keys update-keys-stats x options)))
 
 (defn update-coll-stats [stats x {:keys [::coll-limit] :as options}]
   (cond (not (or (sequential? x) (set? x)))
