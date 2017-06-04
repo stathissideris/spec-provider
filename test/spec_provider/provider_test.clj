@@ -61,6 +61,32 @@
 
   (is (infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) :foo/coll-of-ints))
 
+  (testing "map optional keys"
+    (is (= '((clojure.spec.alpha/def :foo/a clojure.core/integer?)
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :opt-un [:foo/a])))
+           (infer-specs [{}
+                         {}
+                         {:a 1}] :foo/stuff)))
+    (is (= '((clojure.spec.alpha/def :foo/a clojure.core/integer?)
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :opt-un [:foo/a])))
+           (infer-specs [{:a 1}
+                         {}
+                         {}] :foo/stuff)))
+    (is (= '((clojure.spec.alpha/def :foo/b clojure.core/integer?)
+             (clojure.spec.alpha/def :foo/a clojure.core/integer?)
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :opt-un [:foo/a :foo/b])))
+           (infer-specs [{:a 1}
+                         {:a 1}
+                         {:b 1}] :foo/stuff)))
+    (is (= '((clojure.spec.alpha/def :foo/b clojure.core/integer?)
+             (clojure.spec.alpha/def :foo/a clojure.core/integer?)
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/b] :opt-un [:foo/a])))
+           (infer-specs [{:a 1 :b 1}
+                         {:a 1 :b 1}
+                         {:b 1}] :foo/stuff)))
+    (is (= '((clojure.spec.alpha/def :foo/stuff clojure.core/map?))
+           (infer-specs [{}] :foo/stuff))))
+
   (testing "maps that don't have keywords as keys"
     (is (= '((clojure.spec.alpha/def
                :foo/stuff

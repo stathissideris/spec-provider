@@ -5,7 +5,7 @@
             [spec-provider.stats :refer :all :as stats]
             [spec-provider.person-spec :as person]))
 
-(deftest collect-stats-test
+(deftest collect-test
   (testing "collect vector stats"
    (is (= #::stats
           {:sample-count 1
@@ -26,7 +26,7 @@
               :min 1
               :max 2}}
             :distinct-values #{1 2}}}
-          (collect-stats [[1 2 2]]))))
+          (collect [[1 2 2]]))))
 
   (testing "collect positional vector stats"
    (is (= #::stats
@@ -53,46 +53,128 @@
              :sample-count 1
              :pred-map
              {integer? #::stats{:sample-count 1 :min 2 :max 2}}}}}
-          (collect-stats [[1 2 2]] {::stats/positional true}))))
+          (collect [[1 2 2]] {::stats/positional true}))))
 
   (testing "positional stats are collected differently to normal stats"
-    (is (not= (collect-stats [[1 2 2]])
-              (collect-stats [[1 2 2]] {::stats/positional true}))))
+    (is (not= (collect [[1 2 2]])
+              (collect [[1 2 2]] {::stats/positional true}))))
+
+  (testing "stats for different types of maps"
+    (is (= #::stats
+           {:distinct-values #{},
+            :sample-count 2,
+            :pred-map
+            {map?
+             #::stats
+             {:sample-count 2, :min-length 1, :max-length 1}},
+            :map
+            #::stats
+            {:sample-count 2,
+             :keyword-sample-count 2,
+             :keys
+             {:a
+              #::stats
+              {:distinct-values #{9},
+               :sample-count 2,
+               :pred-map
+               {integer?
+                #::stats
+                {:sample-count 2,
+                 :min 9,
+                 :max 9}}}}}}
+           (collect [{:a 9} {:a 9}])))
+    (is (= #::stats
+           {:distinct-values #{},
+            :sample-count 2,
+            :pred-map
+            {map? #::stats{:sample-count 2, :min-length 1, :max-length 1}},
+            :map
+            #::stats
+            {:sample-count 2,
+             :keyword-sample-count 1,
+             :non-keyword-sample-count 1,
+             :keys
+             {:a
+              #::stats
+              {:distinct-values #{9},
+               :sample-count 1,
+               :pred-map
+               {integer? #::stats{:sample-count 1,:min 9,:max 9}}},
+              9
+              #::stats
+              {:distinct-values #{9},
+               :sample-count 1,
+               :pred-map
+               {integer? #::stats{:sample-count 1,:min 9,:max 9}}}}}}
+           (collect [{:a 9} {9 9}])))
+    (is (= #::stats
+           {:distinct-values #{},
+            :sample-count 4,
+            :pred-map
+            {map? #::stats{:sample-count 4, :min-length 0, :max-length 2}},
+            :map
+            #::stats
+            {:sample-count 4,
+             :keyword-sample-count 1,
+             :keys
+             {:a
+              #::stats
+              {:distinct-values #{9},
+               :sample-count 2,
+               :pred-map {integer? #::stats{:sample-count 2,:min 9,:max 9}}},
+              9
+              #::stats
+              {:distinct-values #{9},
+               :sample-count 2,
+               :pred-map {integer? #::stats{:sample-count 2,:min 9,:max 9}}}},
+             :non-keyword-sample-count 1,
+             :mixed-sample-count 1,
+             :empty-sample-count 1}}
+           (stats/collect [{:a 9}
+                           {9 9}
+                           {:a 9 9 9}
+                           {}]))))
 
   (testing "nested map stats"
     (is (= #::stats
-           {:distinct-values #{}
-            :sample-count 1
-            :pred-map
-            {map? #::stats{:sample-count 1 :min-length 2 :max-length 2}}
-            :keys
-            {:foo
-             #::stats
-             {:distinct-values #{1}
-              :sample-count 1
-              :pred-map
-              {integer? #::stats{:sample-count 1 :min 1 :max 1}}}
-             :bar
-             #::stats
-             {:distinct-values #{}
-              :sample-count 1
-              :pred-map
-              {map? #::stats{:sample-count 1 :min-length 2 :max-length 2}}
-              :keys
-              {:baz
+           {:distinct-values #{},
+            :sample-count 1,
+            :pred-map {map? #::stats{:sample-count 1, :min-length 2, :max-length 2}},
+            :map
+            #::stats
+            {:sample-count 1,
+             :keyword-sample-count 1,
+             :keys
+             {:foo
+              #::stats
+              {:distinct-values #{1},
+               :sample-count 1,
+               :pred-map {integer? #::stats{:sample-count 1,:min 1,:max 1}}},
+              :bar
+              #::stats
+              {:distinct-values #{},
+               :sample-count 1,
+               :pred-map
+               {map?
+                #::stats{:sample-count 1,:min-length 2,:max-length 2}},
+               :map
                #::stats
-               {:distinct-values #{2}
-                :sample-count 1
-                :pred-map
-                {integer? #::stats{:sample-count 1 :min 2 :max 2}}}
-               :boo
-               #::stats
-               {:distinct-values #{3}
-                :sample-count 1
-                :pred-map
-                {integer? #::stats{:sample-count 1 :min 3 :max 3}}}}}}}
-         (collect-stats [{:foo 1 :bar {:baz 2 :boo 3}}]))))
+               {:sample-count 1,
+                :keyword-sample-count 1,
+                :keys
+                {:baz
+                 #::stats
+                 {:distinct-values
+                  #{2},
+                  :sample-count 1,
+                  :pred-map {integer? #::stats{:sample-count 1,:min 2,:max 2}}},
+                 :boo
+                 #::stats
+                 {:distinct-values #{3},
+                  :sample-count 1,
+                  :pred-map {integer? #::stats{:sample-count 1,:min 3,:max 3}}}}}}}}}
+           (collect [{:foo 1 :bar {:baz 2 :boo 3}}]))))
 
-  (is (collect-stats (gen/sample (s/gen integer?) 1000)))
-  (is (collect-stats (gen/sample (s/gen (s/coll-of integer?)) 1000)))
-  (is (collect-stats (gen/sample (s/gen ::person/person) 100))))
+  (is (collect (gen/sample (s/gen integer?) 1000)))
+  (is (collect (gen/sample (s/gen (s/coll-of integer?)) 1000)))
+  (is (collect (gen/sample (s/gen ::person/person) 100))))

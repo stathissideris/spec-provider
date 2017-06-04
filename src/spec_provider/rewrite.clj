@@ -14,6 +14,10 @@
 (defn- zip-or [names preds]
   (concat (list `s/or) (mapcat vector names preds)))
 
+(def ^:private cat-names or-names)
+(def ^:private cat-preds or-preds)
+(def ^:private zip-cat zip-or)
+
 (defn- or? [x]
   (and (seq? x) (= `s/or (first x))))
 

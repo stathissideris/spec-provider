@@ -61,6 +61,20 @@
 (s/def ::name string?)
 
 (s/def ::keys (s/nilable (s/map-of any? ::stats))) ;;nilable because map may be empty
+(s/def ::key-preds ::pred-map)
+(s/def ::value-preds ::pred-map)
+(s/def ::empty-sample-count nat-int?)
+(s/def ::keyword-sample-count nat-int?)
+(s/def ::non-keyword-sample-count nat-int?)
+(s/def ::mixed-sample-count nat-int?)
+(s/def ::map
+  (s/keys
+   :req [::sample-count
+         ::keys
+         ::empty-sample-count
+         ::keyword-sample-count
+         ::non-keyword-sample-count
+         ::mixed-sample-count]))
 (s/def ::elements-pos (s/map-of nat-int? ::stats))
 
 (s/def ::hit-distinct-values-limit boolean?)
@@ -114,11 +128,33 @@
         :else
         (reduce-kv
          (fn [stats k v]
-           (update stats k update-stats v options))
+           (if (keyword? k)
+             (update stats k update-stats v options)
+             stats))
          keys-stats x)))
 (s/fdef update-keys-stats
         :args (s/cat :keys (s/nilable ::keys) :value any? :options ::stats-options)
         :ret ::keys)
+
+(defn- keyword-map? [x]
+  (and (map? x)
+       (every? keyword? (keys x))))
+
+(defn- non-keyword-map? [x]
+  (and (map? x)
+       (every? (complement keyword?) (keys x))))
+
+(defn- map-type [m]
+  (cond (empty? m)           ::empty-sample-count
+        (keyword-map? m)     ::keyword-sample-count
+        (non-keyword-map? m) ::non-keyword-sample-count
+        :else                ::mixed-sample-count))
+
+(defn update-map-stats [map-stats x options]
+  (-> map-stats
+      (update ::sample-count safe-inc)
+      (update (map-type x) safe-inc)
+      (update ::keys #(update-keys-stats % x options))))
 
 (defn update-coll-stats [stats x {:keys [::coll-limit] :as options}]
   (cond (not (or (sequential? x) (set? x)))
@@ -157,8 +193,8 @@
           (update ::sample-count safe-inc)
           (update ::pred-map update-pred-map x)
           (cond->
-              (map? x)
-            (update ::keys update-keys-stats x options)
+            (map? x)
+            (update ::map update-map-stats x options)
             (and positional (sequential? x))
             (update ::elements-pos update-positional-stats x options)
             (and (not positional) (sequential? x))
@@ -173,9 +209,9 @@
         :args (s/cat :stats (s/nilable ::stats) :value any? :options (s/? (s/nilable ::stats-options)))
         :ret ::stats)
 
-(defn collect-stats
+(defn collect
   ([data]
-   (collect-stats data {}))
+   (collect data {}))
   ([data options]
    (reduce (fn [stats x] (update-stats stats x options)) nil data)))
 (s/fdef collect-stats

@@ -78,14 +78,13 @@
 (declare summarize-stats*)
 (defn- summarize-non-keyword-map [keys-stats ns]
   (list `s/map-of
-        (summarize-stats* (stats/collect-stats (keys keys-stats)) ns)
+        (summarize-stats* (stats/collect (keys keys-stats)) ns)
         (summarize-stats* (reduce merge-stats (vals keys-stats)) ns)))
 
-(defn- summarize-keys [keys-stats ns]
+(defn- summarize-keys [keys-stats sample-count ns]
   (if (empty? keys-stats)
     `map? ;;don't enforce empty?
-    (let [highest-freq (apply max (map ::stats/sample-count (vals keys-stats)))
-          extract-keys (fn [filter-fn]
+    (let [extract-keys (fn [filter-fn]
                          (->> keys-stats
                               (filter filter-fn)
                               (mapv #(qualify-key (key %) ns))
@@ -93,36 +92,36 @@
                               vec
                               not-empty))
           req          (extract-keys
-                        (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) highest-freq))))
+                        (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) sample-count))))
           opt          (extract-keys
-                        (fn [[k v]] (and (qualified-key? k) (< (::stats/sample-count v) highest-freq))))
+                        (fn [[k v]] (and (qualified-key? k) (< (::stats/sample-count v) sample-count))))
           req-un       (extract-keys
-                        (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) highest-freq))))
+                        (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) sample-count))))
           opt-un       (extract-keys
-                        (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) highest-freq))))]
+                        (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) sample-count))))]
       (cond-> (list `s/keys)
         req (concat [:req req])
         opt (concat [:opt opt])
         req-un (concat [:req-un req-un])
         opt-un (concat [:opt-un opt-un])))))
 
-(defn- keyword-key-stats [key-stats]
+(defn- keyword-map-stats [key-stats]
   (reduce-kv (fn [m k v] (if (keyword? k) (assoc m k v) m)) {} key-stats))
 
-(defn- non-keyword-key-stats [key-stats]
+(defn- non-keyword-map-stats [key-stats]
   (reduce-kv (fn [m k v] (if-not (keyword? k) (assoc m k v) m)) {} key-stats))
 
-(defn- summarize-map-stats [keys-stats ns]
+(defn- summarize-map-stats [keys-stats sample-count ns]
   (cond (every? keyword? (keys keys-stats))
-        (summarize-keys keys-stats ns)
+        (summarize-keys keys-stats sample-count ns)
         (every? (complement keyword?) (keys keys-stats))
         (summarize-non-keyword-map keys-stats ns)
         :else
         (list `s/or
               :non-keyword-map
-              (summarize-non-keyword-map (non-keyword-key-stats keys-stats) ns)
+              (summarize-non-keyword-map (non-keyword-map-stats keys-stats) ns)
               :keyword-map
-              (summarize-keys (keyword-key-stats keys-stats) ns))))
+              (summarize-keys (keyword-map-stats keys-stats) sample-count ns))))
 
 (defn- add-kind [kind spec]
   (if (and (list? spec) kind)
@@ -144,6 +143,7 @@
 
 (defn summarize-stats* [{pred-map            ::stats/pred-map
                          keys-stats          ::stats/keys
+                         sample-count        ::stats/sample-count
                          elements-coll-stats ::stats/elements-coll
                          elements-pos-stats  ::stats/elements-pos
                          elements-set-stats  ::stats/elements-set
@@ -157,7 +157,7 @@
         summaries
         (remove
          (comp nil? second)
-         [(when keys-stats [:map (wrap-nilable nilable? (summarize-map-stats keys-stats spec-ns))])
+         [(when keys-stats [:map (wrap-nilable nilable? (summarize-map-stats keys-stats sample-count spec-ns))])
           (when elements-coll-stats
             [:collection
              (->> (summarize-coll-elements elements-coll-stats spec-ns)
@@ -229,7 +229,7 @@
      (throw
       (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
                {:spec-name spec-name})))
-   (let [stats (stats/collect-stats data (::stats/options options))]
+   (let [stats (stats/collect data (::stats/options options))]
      (s/valid? ::stats/stats stats)
      (summarize-stats stats spec-name))))
 

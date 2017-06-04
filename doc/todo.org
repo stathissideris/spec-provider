@@ -8,3 +8,5 @@
 ** TODO Collect min/max length for strings
 ** TODO Collect min/max length for sequential
 ** TODO Super strict mode that restricts lengths of strings, min/max on numbers, length of lists etc
+** TODO Collect stats for keyword maps/non-keyword maps separately
+** TODO Use sample counts from map predicates to decide on optionality of keywords
