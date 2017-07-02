@@ -70,7 +70,12 @@
    :min-length                min
    :max-length                max
    :distinct-values           into
+   :map                       #(merge-with-fns merge-stats-fns %1 %2)
    :keys                      merge-keys-stats
+   :empty-sample-count        +
+   :keyword-sample-count      +
+   :non-keyword-sample-count  +
+   :mixed-sample-count        +
    :elements-coll             merge-elements-coll-stats
    :elements-set              merge-elements-coll-stats
    :pred-map                  merge-pred-map

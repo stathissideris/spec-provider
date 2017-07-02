@@ -84,7 +84,7 @@
            (infer-specs [{:a 1 :b 1}
                          {:a 1 :b 1}
                          {:b 1}] :foo/stuff)))
-    (is (= '((clojure.spec.alpha/def :foo/stuff clojure.core/map?))
+    (is (= '((clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/and clojure.core/empty? clojure.core/map?)))
            (infer-specs [{}] :foo/stuff))))
 
   (testing "maps that don't have keywords as keys"
@@ -151,7 +151,7 @@
     (is (= '((clojure.spec.alpha/def
                :spec-provider.provider-test/stuff
                (clojure.spec.alpha/or
-                :map clojure.core/map?
+                :map (clojure.spec.alpha/and clojure.core/empty? clojure.core/map?)
                 :set (clojure.spec.alpha/coll-of clojure.core/any? :kind clojure.core/set?)
                 :simple
                 (clojure.spec.alpha/or
@@ -167,7 +167,7 @@
                :spec-provider.provider-test/stuff
                (clojure.spec.alpha/or
                 :collection (clojure.spec.alpha/coll-of clojure.core/integer?)
-                :map clojure.core/map?
+                :map (clojure.spec.alpha/and clojure.core/empty? clojure.core/map?)
                 :set (clojure.spec.alpha/coll-of clojure.core/any? :kind clojure.core/set?)
                 :simple
                 (clojure.spec.alpha/or
@@ -222,7 +222,7 @@
   (testing "sets"
     (is (= '((clojure.spec.alpha/def :foo/a (clojure.spec.alpha/coll-of clojure.core/keyword? :kind clojure.core/set?))
              (clojure.spec.alpha/def :foo/b (clojure.spec.alpha/coll-of clojure.core/keyword? :kind clojure.core/set?))
-             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/b] :opt-un [:foo/a])))
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :opt-un [:foo/a :foo/b])))
            (infer-specs
             [{:b #{:a}}
              {:b #{:b}}
@@ -231,18 +231,21 @@
     (is (= '((clojure.spec.alpha/def
                :foo/b (clojure.spec.alpha/coll-of clojure.core/string? :kind clojure.core/set?))
              (clojure.spec.alpha/def :foo/a (clojure.spec.alpha/keys :req-un [:foo/b]))
-             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/a :foo/b])))
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :opt-un [:foo/a :foo/b])))
            (infer-specs
-            [{:a {:b #{"string 1" "string 2"}}} {:b #{"string 3"}}] :foo/stuff)))
+            [{:a {:b #{"string 1" "string 2"}}}
+             {:b #{"string 3"}}]
+            :foo/stuff)))
     (is (= '((clojure.spec.alpha/def
                :foo/b (clojure.spec.alpha/coll-of
                        (clojure.spec.alpha/or :keyword clojure.core/keyword?
                                               :string clojure.core/string?)
                        :kind clojure.core/set?))
              (clojure.spec.alpha/def :foo/a (clojure.spec.alpha/keys :req-un [:foo/b]))
-             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/a :foo/b])))
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :opt-un [:foo/a :foo/b])))
            (infer-specs
-            [{:a {:b #{:a "string 2"}}} {:b #{"string 3"}}] :foo/stuff)))
+            [{:a {:b #{:a "string 2"}}}
+             {:b #{"string 3"}}] :foo/stuff)))
 
     (testing "- nilable"
       (is (= '((clojure.spec.alpha/def

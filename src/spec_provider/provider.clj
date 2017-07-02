@@ -82,28 +82,26 @@
         (summarize-stats* (reduce merge-stats (vals keys-stats)) ns)))
 
 (defn- summarize-keys [keys-stats sample-count ns]
-  (if (empty? keys-stats)
-    `map? ;;don't enforce empty?
-    (let [extract-keys (fn [filter-fn]
-                         (->> keys-stats
-                              (filter filter-fn)
-                              (mapv #(qualify-key (key %) ns))
-                              sort
-                              vec
-                              not-empty))
-          req          (extract-keys
-                        (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) sample-count))))
-          opt          (extract-keys
-                        (fn [[k v]] (and (qualified-key? k) (< (::stats/sample-count v) sample-count))))
-          req-un       (extract-keys
-                        (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) sample-count))))
-          opt-un       (extract-keys
-                        (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) sample-count))))]
-      (cond-> (list `s/keys)
-        req (concat [:req req])
-        opt (concat [:opt opt])
-        req-un (concat [:req-un req-un])
-        opt-un (concat [:opt-un opt-un])))))
+  (let [extract-keys (fn [filter-fn]
+                       (->> keys-stats
+                            (filter filter-fn)
+                            (mapv #(qualify-key (key %) ns))
+                            sort
+                            vec
+                            not-empty))
+        req          (extract-keys
+                      (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) sample-count))))
+        opt          (extract-keys
+                      (fn [[k v]] (and (qualified-key? k) (< (::stats/sample-count v) sample-count))))
+        req-un       (extract-keys
+                      (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) sample-count))))
+        opt-un       (extract-keys
+                      (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) sample-count))))]
+    (cond-> (list `s/keys)
+      req (concat [:req req])
+      opt (concat [:opt opt])
+      req-un (concat [:req-un req-un])
+      opt-un (concat [:opt-un opt-un]))))
 
 (defn- keyword-map-stats [key-stats]
   (reduce-kv (fn [m k v] (if (keyword? k) (assoc m k v) m)) {} key-stats))
@@ -111,17 +109,27 @@
 (defn- non-keyword-map-stats [key-stats]
   (reduce-kv (fn [m k v] (if-not (keyword? k) (assoc m k v) m)) {} key-stats))
 
-(defn- summarize-map-stats [keys-stats sample-count ns]
-  (cond (every? keyword? (keys keys-stats))
-        (summarize-keys keys-stats sample-count ns)
-        (every? (complement keyword?) (keys keys-stats))
-        (summarize-non-keyword-map keys-stats ns)
-        :else
-        (list `s/or
-              :non-keyword-map
-              (summarize-non-keyword-map (non-keyword-map-stats keys-stats) ns)
-              :keyword-map
-              (summarize-keys (keyword-map-stats keys-stats) sample-count ns))))
+(defn- summarize-map-stats [{:keys [::stats/sample-count
+                                    ::stats/keys
+                                    ::stats/empty-sample-count
+                                    ::stats/keyword-sample-count
+                                    ::stats/non-keyword-sample-count
+                                    ::stats/mixed-sample-count] :as map-stats} ns]
+  (let [summaries
+        (cond-> []
+          (and empty-sample-count (not keyword-sample-count))
+          (conj [:empty `(s/and empty? map?)])
+
+          non-keyword-sample-count
+          (conj [:non-keyword-map (summarize-non-keyword-map (non-keyword-map-stats keys) ns)])
+
+          keyword-sample-count
+          (conj [:keyword-map (summarize-keys (keyword-map-stats keys)
+                                              (+ (or empty-sample-count 0) keyword-sample-count)
+                                              ns)]))]
+    (if (= 1 (count summaries))
+      (-> summaries first second)
+      (concat (list `s/or) (apply concat summaries)))))
 
 (defn- add-kind [kind spec]
   (if (and (list? spec) kind)
@@ -142,7 +150,7 @@
      (map #(summarize-stats* % spec-ns) (vals (sort-by key stats))))))) ;;TODO extra rules for optional elements
 
 (defn summarize-stats* [{pred-map            ::stats/pred-map
-                         keys-stats          ::stats/keys
+                         map-stats           ::stats/map
                          sample-count        ::stats/sample-count
                          elements-coll-stats ::stats/elements-coll
                          elements-pos-stats  ::stats/elements-pos
@@ -151,13 +159,13 @@
                         spec-ns]
   (let [nilable?   (get-in stats [::stats/pred-map nil?])
         leaf-stats (cond-> stats
-                     keys-stats          (update ::stats/pred-map dissoc map?)
+                     map-stats           (update ::stats/pred-map dissoc map?)
                      elements-coll-stats (update ::stats/pred-map dissoc sequential?)
                      elements-pos-stats  (update ::stats/pred-map dissoc sequential?))
         summaries
         (remove
          (comp nil? second)
-         [(when keys-stats [:map (wrap-nilable nilable? (summarize-map-stats keys-stats sample-count spec-ns))])
+         [(when map-stats [:map (wrap-nilable nilable? (summarize-map-stats map-stats spec-ns))])
           (when elements-coll-stats
             [:collection
              (->> (summarize-coll-elements elements-coll-stats spec-ns)
@@ -188,9 +196,9 @@
     spec))
 
 (defn- flatten-stats [stats spec-name]
-  (let [children (comp (some-fn ::stats/keys
+  (let [children (comp (some-fn (comp ::stats/keys ::stats/map)
                                 ::stats/elements-pos
-                                (comp ::stats/keys ::stats/elements-coll)) second)]
+                                (comp ::stats/keys ::stats/map ::stats/elements-coll)) second)]
    (reduce
     (fn [flat [stat-name stats :as node]]
       (if (and (keyword? stat-name) ;;stat "name" is number for ::stats/elements-pos

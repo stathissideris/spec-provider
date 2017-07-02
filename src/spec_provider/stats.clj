@@ -54,9 +54,8 @@
 (s/def ::min-length nat-int?)
 (s/def ::max-length nat-int?)
 (s/def ::pred-stats
-  (s/keys
-   :req [::sample-count]
-   :opt [::min ::max ::min-length ::max-length]))
+  (s/keys :req [::sample-count]
+          :opt [::min ::max ::min-length ::max-length]))
 (s/def ::pred-map (s/map-of (set preds) ::pred-stats))
 (s/def ::name string?)
 
@@ -68,23 +67,21 @@
 (s/def ::non-keyword-sample-count nat-int?)
 (s/def ::mixed-sample-count nat-int?)
 (s/def ::map
-  (s/keys
-   :req [::sample-count
-         ::keys
-         ::empty-sample-count
-         ::keyword-sample-count
-         ::non-keyword-sample-count
-         ::mixed-sample-count]))
+  (s/keys :req [::sample-count
+                ::keys]
+          :opt [::empty-sample-count
+                ::keyword-sample-count
+                ::non-keyword-sample-count
+                ::mixed-sample-count]))
 (s/def ::elements-pos (s/map-of nat-int? ::stats))
 
 (s/def ::hit-distinct-values-limit boolean?)
 (s/def ::hit-key-size-limit boolean?)
 (s/def ::stats
-  (s/keys
-   :req [::sample-count ::pred-map ::distinct-values]
-   :opt [::name ::keys ::elements-pos ::elements-coll
-         ::hit-distinct-values-limit
-         ::hit-key-size-limit]))
+  (s/keys :req [::sample-count ::pred-map ::distinct-values]
+          :opt [::name ::keys ::elements-pos ::elements-coll
+                ::hit-distinct-values-limit
+                ::hit-key-size-limit]))
 (s/def ::elements-coll (s/nilable ::stats))
 
 
