@@ -84,6 +84,12 @@
            (infer-specs [{:a 1 :b 1}
                          {:a 1 :b 1}
                          {:b 1}] :foo/stuff)))
+    (is (= '((clojure.spec.alpha/def :foo/b clojure.core/integer?)
+             (clojure.spec.alpha/def :foo/a clojure.core/integer?)
+             (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :req-un [:foo/a :foo/b])))
+           (infer-specs [{:a 1 :b 1}
+                         {:a 2 :b 2}
+                         {:a 3 :b 3}] :foo/stuff)))
     (is (= '((clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/and clojure.core/empty? clojure.core/map?)))
            (infer-specs [{}] :foo/stuff))))
 
@@ -111,8 +117,56 @@
                   (clojure.spec.alpha/map-of clojure.core/integer? clojure.core/integer?)
                   :keyword-map
                   (clojure.spec.alpha/keys :req-un [:foo/a]))))
-           (infer-specs [{:a 4}
-                         {4 4}] :foo/stuff))))
+             (infer-specs [{:a 4}
+                           {4 4}] :foo/stuff)))
+      (is (= '((clojure.spec.alpha/def :foo/b clojure.core/integer?)
+               (clojure.spec.alpha/def :foo/a clojure.core/integer?)
+               (clojure.spec.alpha/def
+                 :foo/stuff
+                 (clojure.spec.alpha/and
+                  (clojure.spec.alpha/keys :opt-un [:foo/a :foo/b])
+                  (clojure.spec.alpha/map-of
+                   (clojure.spec.alpha/or :integer clojure.core/integer? :keyword clojure.core/keyword?)
+                   clojure.core/integer?))))
+             (infer-specs [{:a 4, 4 4}
+                           {:b 10, 4 10}] :foo/stuff)))
+      (is (= '((clojure.spec.alpha/def :foo/b clojure.core/integer?)
+               (clojure.spec.alpha/def :foo/a clojure.core/integer?)
+               (clojure.spec.alpha/def
+                 :foo/stuff
+                 (clojure.spec.alpha/and
+                  (clojure.spec.alpha/keys :opt-un [:foo/a :foo/b])
+                  (clojure.spec.alpha/map-of
+                   (clojure.spec.alpha/or :keyword clojure.core/keyword? :string clojure.core/string?)
+                   clojure.core/integer?))))
+             (infer-specs [{"foo" 0}
+                           {:a 4, "4" 4}
+                           {:a 5 :b 10, "4" 10}] :foo/stuff)))
+      (is (= '((clojure.spec.alpha/def :foo/b clojure.core/integer?)
+               (clojure.spec.alpha/def :foo/a clojure.core/integer?)
+               (clojure.spec.alpha/def
+                 :foo/stuff
+                 (clojure.spec.alpha/and
+                  (clojure.spec.alpha/keys :opt-un [:foo/a :foo/b])
+                  (clojure.spec.alpha/map-of
+                   (clojure.spec.alpha/or :keyword clojure.core/keyword? :string clojure.core/string?)
+                   clojure.core/integer?))))
+             (infer-specs [{}
+                           {"foo" 0}
+                           {:a 4, "4" 4}
+                           {:a 5 :b 10, "4" 10}] :foo/stuff)))
+      (is (= '((clojure.spec.alpha/def :foo/b clojure.core/integer?)
+               (clojure.spec.alpha/def :foo/a clojure.core/integer?)
+               (clojure.spec.alpha/def
+                 :foo/stuff
+                 (clojure.spec.alpha/and
+                  (clojure.spec.alpha/keys :opt-un [:foo/a :foo/b])
+                  (clojure.spec.alpha/map-of
+                   (clojure.spec.alpha/or :keyword clojure.core/keyword? :string clojure.core/string?)
+                   clojure.core/integer?))))
+             (infer-specs [{}
+                           {:a 4, "4" 4}
+                           {:a 5 :b 10, "4" 10}] :foo/stuff))))
 
     ;;TODO this case does not work as expected (a is not promoted to top-level as a named spec):
     ;; (infer-specs [{{:a 4} 3}

@@ -127,9 +127,21 @@
           (conj [:keyword-map (summarize-keys (keyword-map-stats keys)
                                               (+ (or empty-sample-count 0) keyword-sample-count)
                                               ns)]))]
-    (if (= 1 (count summaries))
-      (-> summaries first second)
-      (concat (list `s/or) (apply concat summaries)))))
+    (cond mixed-sample-count
+          (list `s/and
+                (summarize-keys (keyword-map-stats keys)
+                                (+ mixed-sample-count
+                                   (or empty-sample-count 0)
+                                   (or keyword-sample-count 0)
+                                   (or non-keyword-sample-count 0))
+                                ns)
+                (summarize-non-keyword-map keys ns))
+
+          (= 1 (count summaries))
+          (-> summaries first second)
+
+          :else
+          (concat (list `s/or) (apply concat summaries)))))
 
 (defn- add-kind [kind spec]
   (if (and (list? spec) kind)
