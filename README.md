@@ -21,7 +21,7 @@ change, possibly flawed.
 To use this library, add this dependency to your `project.clj` file:
 
 ```
-[spec-provider "0.4.8"]
+[spec-provider "0.4.9"]
 ```
 
 [Version history](https://github.com/stathissideris/spec-provider/blob/master/doc/history.md)
@@ -364,6 +364,43 @@ In this case, because maps like `{:zz 2}` appear under the key `:b`,
 spec-provider knows what to call them, so it uses that name for
 `(s/def ::a (s/coll-of ::b))`. This replacement is not performed if
 the spec definition is a predicate from the `clojure.core` namespace.
+
+#### Inferring specs with numerical ranges
+
+spec-provider collects stats about the min/max values of numerical
+fields, but will not output them in the inferred spec by default. To
+get range predicates in your specs you have to pass the
+`:spec-provider.provider/range` option:
+
+```clojure
+> (require '[spec-provider.provider :refer :all :as pr])
+
+> (pprint-specs
+    (infer-specs [{:foo 3, :bar -400}
+                  {:foo 3, :bar 4}
+                  {:foo 10, :bar 400}] ::stuff {::pr/range true})
+    *ns* 's)
+
+(s/def ::bar (s/and integer? (fn [x] (<= -400 x 400))))
+(s/def ::foo (s/and integer? (fn [x] (<= 3 x 10))))
+(s/def ::stuff (s/keys :req-un [::bar ::foo]))
+```
+
+You can also restrict range predicates to specific keys by passing a
+set of qualified keys that are the names of the specs that should get
+a range predicate:
+
+```clojure
+> (pprint-specs
+    (infer-specs [{:foo 3, :bar -400}
+                  {:foo 3, :bar 4}
+                  {:foo 10, :bar 400}] ::stuff {::pr/range #{::foo}})
+    *ns* 's)
+
+(s/def ::bar integer?)
+(s/def ::foo (s/and integer? (fn [x] (<= 3 x 10))))
+(s/def ::stuff (s/keys :req-un [::bar ::foo]))
+```
 
 ### How it's done
 
