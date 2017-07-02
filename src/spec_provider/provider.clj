@@ -13,6 +13,10 @@
 ;;enumeration
 (def ^:dynamic enum-threshold 0.1)
 
+(s/def ::range (s/or :switch boolean?
+                     :names (s/coll-of qualified-keyword? :kind set?)))
+(s/def ::options (s/keys :opt [::range]))
+
 (def pred->form
   {string?                  `string?
    double?                  `double?
@@ -37,15 +41,28 @@
    symbol?                  :symbol
    stats/none-of-the-above? :any})
 
+(def number-spec? #{`double? `float? `integer?})
+
 (defn- wrap-nilable [nilable? form]
   (if-not nilable?
     form
     (list `s/nilable form)))
 
+(defn- restrict-range [{:keys [::stats/min ::stats/max] :as stats}
+                       spec-name
+                       {:keys [::stats/range] :as options}
+                       spec]
+  (if (and (number-spec? spec)
+           (or (= true range)
+               (set? range)
+               (get range spec-name)))
+    (list `s/and spec `(fn [~'x] (<= ~min ~'x ~max)))
+    spec))
+
 (defn summarize-leaf [{:keys [::stats/pred-map
                               ::stats/sample-count
                               ::stats/distinct-values
-                              ::stats/hit-distinct-values-limit] :as stats}]
+                              ::stats/hit-distinct-values-limit] :as stats} spec-name options]
   (let [nilable? (get pred-map nil?)
         pred-map (dissoc pred-map nil? set?)]
     (cond (stats/empty-sequential? stats)
@@ -59,7 +76,9 @@
           (wrap-nilable nilable? (disj distinct-values nil))
 
           (= 1 (count pred-map))
-          (wrap-nilable nilable? (pred->form (ffirst pred-map)))
+          (->> (pred->form (ffirst pred-map))
+               (restrict-range stats spec-name options)
+               (wrap-nilable nilable?))
 
           (> (count pred-map) 1)
           (concat
@@ -67,6 +86,7 @@
            (->> (map first pred-map)
                 (map (juxt pred->name
                            (comp (partial wrap-nilable nilable?)
+                                 (partial restrict-range stats spec-name options)
                                  pred->form)))
                 ;;(remove (comp nil? first))
                 (sort-by first)
@@ -148,7 +168,6 @@
     (concat spec (list :kind kind))
     spec))
 
-(declare summarize-stats*)
 (defn- summarize-coll-elements [stats spec-ns]
   (list `s/coll-of (summarize-stats* stats spec-ns)))
 
@@ -168,7 +187,9 @@
                          elements-pos-stats  ::stats/elements-pos
                          elements-set-stats  ::stats/elements-set
                          :as                 stats}
-                        spec-ns]
+                        spec-ns
+                        spec-name
+                        options]
   (let [nilable?   (get-in stats [::stats/pred-map nil?])
         leaf-stats (cond-> stats
                      map-stats           (update ::stats/pred-map dissoc map?)
@@ -188,7 +209,7 @@
              (->> (summarize-coll-elements elements-set-stats spec-ns)
                   (add-kind `set?)
                   (wrap-nilable nilable?))])
-          [:simple (let [s (summarize-leaf leaf-stats)]
+          [:simple (let [s (summarize-leaf leaf-stats spec-name options)]
                      (if-not (coll? s) s (not-empty s)))]])]
     (cond (and (zero? (count summaries))
                (or elements-coll-stats elements-pos-stats elements-set-stats))
@@ -224,19 +245,22 @@
      :stats {}}
     (tree-seq children children [spec-name stats]))))
 
-(defn summarize-stats [stats spec-name]
-  (let [spec-ns               (namespace spec-name)
-        {:keys [order stats]} (flatten-stats stats spec-name)
-        specs
-        (->> (map #(vector % (get stats %)) (distinct order))
-             (map (fn [[stat-name stats]]
-                    [(keyword spec-ns (name stat-name))
-                     (maybe-promote-spec (summarize-stats* stats spec-ns))]))
-             (map (fn [[spec-name spec]]
-                    (list `s/def spec-name spec))))]
-    (-> specs
-        rewrite/all-nilable-or
-        rewrite/known-names)))
+(defn summarize-stats
+  ([stats spec-name]
+   (summarize-stats stats spec-name {}))
+  ([stats spec-name options]
+   (let [spec-ns               (namespace spec-name)
+         {:keys [order stats]} (flatten-stats stats spec-name)
+         specs
+         (->> (map #(vector % (get stats %)) (distinct order))
+              (map (fn [[stat-name stats]]
+                     [(keyword spec-ns (name stat-name))
+                      (maybe-promote-spec (summarize-stats* stats spec-ns spec-name options))]))
+              (map (fn [[spec-name spec]]
+                     (list `s/def spec-name spec))))]
+     (-> specs
+         rewrite/all-nilable-or
+         rewrite/known-names))))
 (s/fdef summarize-stats
         :args (s/cat :stats (s/nilable ::stats/stats)
                      :spec-name qualified-keyword?))
@@ -249,9 +273,9 @@
      (throw
       (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
                {:spec-name spec-name})))
-   (let [stats (stats/collect data (::stats/options options))]
+   (let [stats (stats/collect data options)]
      (s/valid? ::stats/stats stats)
-     (summarize-stats stats spec-name))))
+     (summarize-stats stats spec-name options))))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
   (let [domain-ns (str domain-ns)
