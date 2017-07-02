@@ -3,7 +3,7 @@
             [clojure.spec.gen.alpha :as gen]
             [clojure.spec.test.alpha]
             [spec-provider.stats :as stats]
-            [spec-provider.merge :refer [merge-stats]]
+            [spec-provider.merge :refer [merge-stats merge-pred-stats]]
             [spec-provider.rewrite :as rewrite]
             [clojure.walk :as walk]
             [clojure.pprint :refer [pprint]]))
@@ -41,28 +41,35 @@
    symbol?                  :symbol
    stats/none-of-the-above? :any})
 
-(def number-spec? #{`double? `float? `integer?})
+(def number-spec? #{'clojure.core/double?
+                    'clojure.core/float?
+                    'clojure.core/integer?})
 
 (defn- wrap-nilable [nilable? form]
   (if-not nilable?
     form
     (list `s/nilable form)))
 
-(defn- restrict-range [{:keys [::stats/min ::stats/max] :as stats}
+(defn- restrict-range [stats
                        spec-name
-                       {:keys [::stats/range] :as options}
+                       {:keys [::range] :as options}
                        spec]
   (if (and (number-spec? spec)
            (or (= true range)
-               (set? range)
-               (get range spec-name)))
-    (list `s/and spec `(fn [~'x] (<= ~min ~'x ~max)))
+               (and (set? range) (get range spec-name))))
+    (let [stats  (-> stats ::stats/pred-map vals)
+          merged (if (= 1 (count stats)) (first stats) (reduce merge-pred-stats stats))
+          min    (::stats/min merged)
+          max    (::stats/max merged)]
+      (list `s/and spec `(fn [~'x] (<= ~min ~'x ~max))))
     spec))
 
-(defn summarize-leaf [{:keys [::stats/pred-map
-                              ::stats/sample-count
-                              ::stats/distinct-values
-                              ::stats/hit-distinct-values-limit] :as stats} spec-name options]
+(defn- summarize-leaf [{:keys [::stats/pred-map
+                               ::stats/sample-count
+                               ::stats/distinct-values
+                               ::stats/hit-distinct-values-limit] :as stats}
+                       spec-name
+                       options]
   (let [nilable? (get pred-map nil?)
         pred-map (dissoc pred-map nil? set?)]
     (cond (stats/empty-sequential? stats)
@@ -96,10 +103,10 @@
 (defn- qualify-key [k ns] (keyword (str ns) (name k)))
 
 (declare summarize-stats*)
-(defn- summarize-non-keyword-map [keys-stats ns]
+(defn- summarize-non-keyword-map [keys-stats ns spec-name options]
   (list `s/map-of
-        (summarize-stats* (stats/collect (keys keys-stats)) ns)
-        (summarize-stats* (reduce merge-stats (vals keys-stats)) ns)))
+        (summarize-stats* (stats/collect (keys keys-stats)) ns spec-name options)
+        (summarize-stats* (reduce merge-stats (vals keys-stats)) ns spec-name options)))
 
 (defn- summarize-keys [keys-stats sample-count ns]
   (let [extract-keys (fn [filter-fn]
@@ -134,14 +141,14 @@
                                     ::stats/empty-sample-count
                                     ::stats/keyword-sample-count
                                     ::stats/non-keyword-sample-count
-                                    ::stats/mixed-sample-count] :as map-stats} ns]
+                                    ::stats/mixed-sample-count] :as map-stats} ns spec-name options]
   (let [summaries
         (cond-> []
           (and empty-sample-count (not keyword-sample-count))
           (conj [:empty `(s/and empty? map?)])
 
           non-keyword-sample-count
-          (conj [:non-keyword-map (summarize-non-keyword-map (non-keyword-map-stats keys) ns)])
+          (conj [:non-keyword-map (summarize-non-keyword-map (non-keyword-map-stats keys) ns spec-name options)])
 
           keyword-sample-count
           (conj [:keyword-map (summarize-keys (keyword-map-stats keys)
@@ -155,7 +162,7 @@
                                    (or keyword-sample-count 0)
                                    (or non-keyword-sample-count 0))
                                 ns)
-                (summarize-non-keyword-map keys ns))
+                (summarize-non-keyword-map keys ns spec-name options))
 
           (= 1 (count summaries))
           (-> summaries first second)
@@ -168,28 +175,30 @@
     (concat spec (list :kind kind))
     spec))
 
-(defn- summarize-coll-elements [stats spec-ns]
-  (list `s/coll-of (summarize-stats* stats spec-ns)))
+(defn- summarize-coll-elements [stats spec-ns spec-name options]
+  (list `s/coll-of (summarize-stats* stats spec-ns spec-name options)))
 
-(defn- summarize-pos-elements [stats spec-ns]
+(defn- summarize-pos-elements [stats spec-ns spec-name options]
   (list
-   `s/spec ;;TODO would nice for this to not happen at top level
+   `s/spec
    (concat
     (list `s/cat)
     (interleave
      (map #(keyword (str "el" %)) (range))
-     (map #(summarize-stats* % spec-ns) (vals (sort-by key stats))))))) ;;TODO extra rules for optional elements
+     (map #(summarize-stats* % spec-ns spec-name options)
+          (vals (sort-by key stats))))))) ;;TODO extra rules for optional elements
 
-(defn summarize-stats* [{pred-map            ::stats/pred-map
-                         map-stats           ::stats/map
-                         sample-count        ::stats/sample-count
-                         elements-coll-stats ::stats/elements-coll
-                         elements-pos-stats  ::stats/elements-pos
-                         elements-set-stats  ::stats/elements-set
-                         :as                 stats}
-                        spec-ns
-                        spec-name
-                        options]
+(defn- summarize-stats*
+  [{pred-map            ::stats/pred-map
+    map-stats           ::stats/map
+    sample-count        ::stats/sample-count
+    elements-coll-stats ::stats/elements-coll
+    elements-pos-stats  ::stats/elements-pos
+    elements-set-stats  ::stats/elements-set
+    :as                 stats}
+   spec-ns
+   spec-name
+   options]
   (let [nilable?   (get-in stats [::stats/pred-map nil?])
         leaf-stats (cond-> stats
                      map-stats           (update ::stats/pred-map dissoc map?)
@@ -198,15 +207,15 @@
         summaries
         (remove
          (comp nil? second)
-         [(when map-stats [:map (wrap-nilable nilable? (summarize-map-stats map-stats spec-ns))])
+         [(when map-stats [:map (wrap-nilable nilable? (summarize-map-stats map-stats spec-ns spec-name options))])
           (when elements-coll-stats
             [:collection
-             (->> (summarize-coll-elements elements-coll-stats spec-ns)
+             (->> (summarize-coll-elements elements-coll-stats spec-ns spec-name options)
                   (wrap-nilable nilable?))])
-          (when elements-pos-stats [:cat (summarize-pos-elements elements-pos-stats spec-ns)])
+          (when elements-pos-stats [:cat (summarize-pos-elements elements-pos-stats spec-ns spec-name options)])
           (when elements-set-stats
             [:set
-             (->> (summarize-coll-elements elements-set-stats spec-ns)
+             (->> (summarize-coll-elements elements-set-stats spec-ns spec-name options)
                   (add-kind `set?)
                   (wrap-nilable nilable?))])
           [:simple (let [s (summarize-leaf leaf-stats spec-name options)]
@@ -254,8 +263,8 @@
          specs
          (->> (map #(vector % (get stats %)) (distinct order))
               (map (fn [[stat-name stats]]
-                     [(keyword spec-ns (name stat-name))
-                      (maybe-promote-spec (summarize-stats* stats spec-ns spec-name options))]))
+                     (let [stat-name (keyword spec-ns (name stat-name))]
+                       [stat-name (maybe-promote-spec (summarize-stats* stats spec-ns stat-name options))])))
               (map (fn [[spec-name spec]]
                      (list `s/def spec-name spec))))]
      (-> specs

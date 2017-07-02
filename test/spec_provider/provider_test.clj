@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
-            [spec-provider.provider :refer :all]
+            [spec-provider.provider :refer :all :as pr]
             [spec-provider.person-spec :as person]
             [spec-provider.stats :as stats]))
 
@@ -183,7 +183,7 @@
                 :el2 (clojure.spec.alpha/keys :req-un [:foo/bar :foo/foo]))))
            (infer-specs [[1 2 {:foo 3 :bar 4}]]
                         :foo/vector
-                        #::stats{:options #::stats{:positional true}})))
+                        #::stats{:positional true})))
     (is (= '((clojure.spec.alpha/def :foo/bar clojure.core/integer?)
              (clojure.spec.alpha/def :foo/foo clojure.core/integer?)
              (clojure.spec.alpha/def
@@ -199,7 +199,7 @@
                        :el2 clojure.core/double?)))))
            (infer-specs [[1 2 {:foo 3 :bar 4} [1.2 5.4 3.0]]]
                         :foo/vector
-                        #::stats{:options #::stats{:positional true}}))))
+                        #::stats{:positional true}))))
 
   (testing "order of or"
     (is (= '((clojure.spec.alpha/def
@@ -262,7 +262,7 @@
                            [nil 2 {:foo 3 :bar 4}]
                            [1 2 nil]]
                           :foo/vector
-                          #::stats{:options #::stats{:positional true}})))))
+                          #::stats{:positional true})))))
 
   (testing "do I know you from somewhere?"
     (is (= '((clojure.spec.alpha/def :foo/zz clojure.core/integer?)
@@ -317,7 +317,63 @@
                  :integer clojure.core/integer?
                  :keyword clojure.core/keyword?
                  :string  clojure.core/string?))))
-           (infer-specs [1 :a "string" nil] :foo/stuff)))))
+           (infer-specs [1 :a "string" nil] :foo/stuff))))
+
+  (testing "numerical ranges"
+    (testing "- for all keys"
+     (is (= '((clojure.spec.alpha/def :spec-provider.provider-test/bar
+                (clojure.spec.alpha/and clojure.core/integer? (clojure.core/fn [x] (clojure.core/<= -400 x 400))))
+              (clojure.spec.alpha/def :spec-provider.provider-test/foo
+                (clojure.spec.alpha/and clojure.core/integer? (clojure.core/fn [x] (clojure.core/<= 3 x 10))))
+              (clojure.spec.alpha/def :spec-provider.provider-test/stuff
+                (clojure.spec.alpha/keys :req-un [:spec-provider.provider-test/bar :spec-provider.provider-test/foo])))
+            (infer-specs [{:foo 3, :bar -400}
+                          {:foo 3, :bar 4}
+                          {:foo 3, :bar 4}
+                          {:foo 3, :bar 4}
+                          {:foo 10, :bar 400}] ::stuff {::pr/range true}))))
+    (testing "- for specific keys"
+      (is (= '((clojure.spec.alpha/def :spec-provider.provider-test/bar clojure.core/integer?)
+               (clojure.spec.alpha/def :spec-provider.provider-test/foo
+                 (clojure.spec.alpha/and clojure.core/integer? (clojure.core/fn [x] (clojure.core/<= 3 x 10))))
+               (clojure.spec.alpha/def :spec-provider.provider-test/stuff
+                 (clojure.spec.alpha/keys :req-un [:spec-provider.provider-test/bar :spec-provider.provider-test/foo])))
+             (infer-specs [{:foo 3, :bar -400}
+                           {:foo 3, :bar 4}
+                           {:foo 3, :bar 4}
+                           {:foo 3, :bar 4}
+                           {:foo 10, :bar 400}] ::stuff {::pr/range #{::foo}}))))
+    (testing "- for map-of"
+      (is (= '((clojure.spec.alpha/def :spec-provider.provider-test/stuff
+                 (clojure.spec.alpha/map-of
+                  (clojure.spec.alpha/and clojure.core/integer? (clojure.core/fn [x] (clojure.core/<= 1 x 4)))
+                  (clojure.spec.alpha/and clojure.core/integer? (clojure.core/fn [x] (clojure.core/<= 100 x 1000))))))
+             (infer-specs [{1 100 2 200}
+                           {1 200 4 1000}] ::stuff {::pr/range true}))))
+    (testing "- ignored when the key is not numerical"
+      (is (= '((clojure.spec.alpha/def :spec-provider.provider-test/bar clojure.core/string?)
+               (clojure.spec.alpha/def :spec-provider.provider-test/foo clojure.core/integer?)
+               (clojure.spec.alpha/def :spec-provider.provider-test/stuff
+                 (clojure.spec.alpha/keys :req-un [:spec-provider.provider-test/bar :spec-provider.provider-test/foo])))
+             (infer-specs [{:foo 3, :bar "dwdw"}
+                           {:foo 3, :bar "dwdw"}
+                           {:foo 3, :bar "dqdw"}
+                           {:foo 3, :bar "dwdw"}
+                           {:foo 10, :bar "dwdw"}] ::stuff {::pr/range #{::bar}}))))
+    (testing "- with mixed values"
+      (is (= '((clojure.spec.alpha/def :spec-provider.provider-test/bar
+                 (clojure.spec.alpha/or
+                  :integer (clojure.spec.alpha/and clojure.core/integer? (clojure.core/fn [x] (clojure.core/<= 1 x 100)))
+                  :string clojure.core/string?))
+               (clojure.spec.alpha/def :spec-provider.provider-test/foo
+                 (clojure.spec.alpha/and clojure.core/integer? (clojure.core/fn [x] (clojure.core/<= 3 x 10))))
+               (clojure.spec.alpha/def :spec-provider.provider-test/stuff
+                 (clojure.spec.alpha/keys :req-un [:spec-provider.provider-test/bar :spec-provider.provider-test/foo])))
+             (infer-specs [{:foo 3, :bar 1}
+                           {:foo 3, :bar "dwdw"}
+                           {:foo 3, :bar "dqdw"}
+                           {:foo 3, :bar 100}
+                           {:foo 10, :bar "dwdw"}] ::stuff {::pr/range true}))))))
 
 (deftest person-spec-inference-test
   (let [persons (gen/sample (s/gen ::person/person) 100)]

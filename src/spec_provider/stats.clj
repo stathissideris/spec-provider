@@ -67,8 +67,7 @@
 (s/def ::non-keyword-sample-count nat-int?)
 (s/def ::mixed-sample-count nat-int?)
 (s/def ::map
-  (s/keys :req [::sample-count
-                ::keys]
+  (s/keys :req [::sample-count ::keys]
           :opt [::empty-sample-count
                 ::keyword-sample-count
                 ::non-keyword-sample-count
