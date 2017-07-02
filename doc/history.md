@@ -1,5 +1,10 @@
 # Version history
 
+## 0.4.8
+
+* Fixes issues with key optionality in maps (Issued #10)
+* Support for maps that contain mixed keyword and non-keyword keys.
+
 ## 0.4.7
 
 * Support for symbols.
