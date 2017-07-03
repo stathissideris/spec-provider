@@ -1,5 +1,10 @@
 # Version history
 
+## 0.4.9
+
+* `:spec-provider.provider/range` option to enable inference of range
+  predicates for numerical fields.
+
 ## 0.4.8
 
 * Fixes issues with key optionality in maps (Issued #10)
