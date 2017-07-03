@@ -17,8 +17,8 @@
                                :names (s/coll-of qualified-keyword? :kind set?)))
 (s/def ::range ::granular-switch)
 (s/def ::force-map-of ::granular-switch)
-(s/def ::enum-threshold-value (s/or number?
-                                    #{:always :never}))
+(s/def ::enum-threshold-value (s/or :number number?
+                                    :setting #{:always :never}))
 (s/def ::enum-threshold (s/or :num ::enum-threshold-value
                               :names (s/map-of qualified-keyword? ::enum-threshold-value)))
 (s/def ::options (s/keys :opt [::range ::force-map-of ::enum-threshold]))
