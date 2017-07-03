@@ -13,9 +13,15 @@
 ;;enumeration
 (def ^:dynamic enum-threshold 0.1)
 
-(s/def ::range (s/or :switch boolean?
-                     :names (s/coll-of qualified-keyword? :kind set?)))
-(s/def ::options (s/keys :opt [::range]))
+(s/def ::granular-switch (s/or :switch boolean?
+                               :names (s/coll-of qualified-keyword? :kind set?)))
+(s/def ::range ::granular-switch)
+(s/def ::force-map-of ::granular-switch)
+(s/def ::enum-threshold-value (s/or number?
+                                    #{:always :never}))
+(s/def ::enum-threshold (s/or :num ::enum-threshold-value
+                              :names (s/map-of qualified-keyword? ::enum-threshold-value)))
+(s/def ::options (s/keys :opt [::range ::force-map-of ::enum-threshold]))
 
 (def pred->form
   {string?                  `string?
@@ -50,13 +56,16 @@
     form
     (list `s/nilable form)))
 
+(defn- option-applies? [option-value spec-name]
+  (or (= true option-value)
+      (and (set? option-value) (get option-value spec-name))))
+
 (defn- restrict-range [stats
                        spec-name
                        {:keys [::range] :as options}
                        spec]
   (if (and (number-spec? spec)
-           (or (= true range)
-               (and (set? range) (get range spec-name))))
+           (option-applies? range spec-name))
     (let [stats  (-> stats ::stats/pred-map vals)
           merged (if (= 1 (count stats)) (first stats) (reduce merge-pred-stats stats))
           min    (::stats/min merged)
@@ -99,7 +108,6 @@
                 (sort-by first)
                 (apply concat))))))
 
-(defn- qualified-key? [k] (some? (namespace k)))
 (defn- qualify-key [k ns] (keyword (str ns) (name k)))
 
 (declare summarize-stats*)
@@ -117,13 +125,13 @@
                             vec
                             not-empty))
         req          (extract-keys
-                      (fn [[k v]] (and (qualified-key? k) (= (::stats/sample-count v) sample-count))))
+                      (fn [[k v]] (and (qualified-keyword? k) (= (::stats/sample-count v) sample-count))))
         opt          (extract-keys
-                      (fn [[k v]] (and (qualified-key? k) (< (::stats/sample-count v) sample-count))))
+                      (fn [[k v]] (and (qualified-keyword? k) (< (::stats/sample-count v) sample-count))))
         req-un       (extract-keys
-                      (fn [[k v]] (and (not (qualified-key? k)) (= (::stats/sample-count v) sample-count))))
+                      (fn [[k v]] (and (not (qualified-keyword? k)) (= (::stats/sample-count v) sample-count))))
         opt-un       (extract-keys
-                      (fn [[k v]] (and (not (qualified-key? k)) (< (::stats/sample-count v) sample-count))))]
+                      (fn [[k v]] (and (not (qualified-keyword? k)) (< (::stats/sample-count v) sample-count))))]
     (cond-> (list `s/keys)
       req (concat [:req req])
       opt (concat [:opt opt])
@@ -141,34 +149,39 @@
                                     ::stats/empty-sample-count
                                     ::stats/keyword-sample-count
                                     ::stats/non-keyword-sample-count
-                                    ::stats/mixed-sample-count] :as map-stats} ns spec-name options]
-  (let [summaries
-        (cond-> []
-          (and empty-sample-count (not keyword-sample-count))
-          (conj [:empty `(s/and empty? map?)])
+                                    ::stats/mixed-sample-count] :as map-stats}
+                            ns
+                            spec-name
+                            {:keys [::force-map-of] :as options}]
+  (if (option-applies? force-map-of spec-name)
+    (summarize-non-keyword-map keys ns spec-name options)
+    (let [summaries
+          (cond-> []
+            (and empty-sample-count (not keyword-sample-count))
+            (conj [:empty `(s/and empty? map?)])
 
-          non-keyword-sample-count
-          (conj [:non-keyword-map (summarize-non-keyword-map (non-keyword-map-stats keys) ns spec-name options)])
+            non-keyword-sample-count
+            (conj [:non-keyword-map (summarize-non-keyword-map (non-keyword-map-stats keys) ns spec-name options)])
 
-          keyword-sample-count
-          (conj [:keyword-map (summarize-keys (keyword-map-stats keys)
-                                              (+ (or empty-sample-count 0) keyword-sample-count)
-                                              ns)]))]
-    (cond mixed-sample-count
-          (list `s/and
-                (summarize-keys (keyword-map-stats keys)
-                                (+ mixed-sample-count
-                                   (or empty-sample-count 0)
-                                   (or keyword-sample-count 0)
-                                   (or non-keyword-sample-count 0))
-                                ns)
-                (summarize-non-keyword-map keys ns spec-name options))
+            keyword-sample-count
+            (conj [:keyword-map (summarize-keys (keyword-map-stats keys)
+                                                (+ (or empty-sample-count 0) keyword-sample-count)
+                                                ns)]))]
+      (cond mixed-sample-count
+            (list `s/and
+                  (summarize-keys (keyword-map-stats keys)
+                                  (+ mixed-sample-count
+                                     (or empty-sample-count 0)
+                                     (or keyword-sample-count 0)
+                                     (or non-keyword-sample-count 0))
+                                  ns)
+                  (summarize-non-keyword-map keys ns spec-name options))
 
-          (= 1 (count summaries))
-          (-> summaries first second)
+            (= 1 (count summaries))
+            (-> summaries first second)
 
-          :else
-          (concat (list `s/or) (apply concat summaries)))))
+            :else
+            (concat (list `s/or) (apply concat summaries))))))
 
 (defn- add-kind [kind spec]
   (if (and (list? spec) kind)
@@ -258,6 +271,9 @@
   ([stats spec-name]
    (summarize-stats stats spec-name {}))
   ([stats spec-name options]
+   (when-not (s/valid? ::options options)
+     (throw (ex-info (str "Invalid options: " (s/explain-str ::options options))
+                     {:explain (s/explain ::options options)})))
    (let [spec-ns               (namespace spec-name)
          {:keys [order stats]} (flatten-stats stats spec-name)
          specs
