@@ -1,6 +1,6 @@
 (ns spec-provider.merge-test
-  (:require [spec-provider.merge :refer :all]
-            [clojure.test :refer :all]
+  (:require [spec-provider.merge :as m]
+            [clojure.test :refer [deftest testing is]]
             [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as stest]
             [spec-provider.stats :as st]))
@@ -41,7 +41,7 @@
           :hit-distinct-values-limit true
           :hit-key-size-limit        false
           :elements                  [:a :b :c]}
-         (merge-stats
+         (m/merge-stats
           #::st
           {:name                      "foo"
            :sample-count              10

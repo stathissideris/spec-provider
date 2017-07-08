@@ -1,8 +1,8 @@
 (ns spec-provider.stats-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest testing is]]
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
-            [spec-provider.stats :refer :all :as stats]
+            [spec-provider.stats :as stats]
             [spec-provider.person-spec :as person]))
 
 (deftest collect-test
@@ -26,7 +26,7 @@
               :min 1
               :max 2}}
             :distinct-values #{1 2}}}
-          (collect [[1 2 2]]))))
+          (stats/collect [[1 2 2]]))))
 
   (testing "collect positional vector stats"
    (is (= #::stats
@@ -53,11 +53,11 @@
              :sample-count 1
              :pred-map
              {integer? #::stats{:sample-count 1 :min 2 :max 2}}}}}
-          (collect [[1 2 2]] {::stats/positional true}))))
+          (stats/collect [[1 2 2]] {::stats/positional true}))))
 
   (testing "positional stats are collected differently to normal stats"
-    (is (not= (collect [[1 2 2]])
-              (collect [[1 2 2]] {::stats/positional true}))))
+    (is (not= (stats/collect [[1 2 2]])
+              (stats/collect [[1 2 2]] {::stats/positional true}))))
 
   (testing "stats for different types of maps"
     (is (= #::stats
@@ -82,7 +82,7 @@
                 {:sample-count 2,
                  :min 9,
                  :max 9}}}}}}
-           (collect [{:a 9} {:a 9}])))
+           (stats/collect [{:a 9} {:a 9}])))
     (is (= #::stats
            {:distinct-values #{},
             :sample-count 2,
@@ -106,7 +106,7 @@
                :sample-count 1,
                :pred-map
                {integer? #::stats{:sample-count 1,:min 9,:max 9}}}}}}
-           (collect [{:a 9} {9 9}])))
+           (stats/collect [{:a 9} {9 9}])))
     (is (= #::stats
            {:distinct-values #{},
             :sample-count 4,
@@ -173,8 +173,8 @@
                  {:distinct-values #{3},
                   :sample-count 1,
                   :pred-map {integer? #::stats{:sample-count 1,:min 3,:max 3}}}}}}}}}
-           (collect [{:foo 1 :bar {:baz 2 :boo 3}}]))))
+           (stats/collect [{:foo 1 :bar {:baz 2 :boo 3}}]))))
 
-  (is (collect (gen/sample (s/gen integer?) 1000)))
-  (is (collect (gen/sample (s/gen (s/coll-of integer?)) 1000)))
-  (is (collect (gen/sample (s/gen ::person/person) 100))))
+  (is (stats/collect (gen/sample (s/gen integer?) 1000)))
+  (is (stats/collect (gen/sample (s/gen (s/coll-of integer?)) 1000)))
+  (is (stats/collect (gen/sample (s/gen ::person/person) 100))))
