@@ -124,26 +124,27 @@
       ~@(drop 1 (butlast body))
       (record-return-value! ~fn-name ~atom-sym ~(last body)))))
 
-(defmacro instrument [trace-atom defn-code]
-  (assert (= 'defn (first defn-code)))
-  (let [fn-name  (second defn-code)
-        start    (if (string? (nth defn-code 2))
-                   (take 3 defn-code)
-                   (take 2 defn-code))
-        doc      (if (string? (nth defn-code 2)) (nth defn-code 2) "")
-        rest     (if (string? (nth defn-code 2))
-                   (drop 3 defn-code)
-                   (drop 2 defn-code))
-        bodies   (if (vector? (first rest))
-                   [rest]
-                   (vec rest))
-        atom-sym (gensym "spec-provider-atom-")]
-    `(let [~atom-sym ~trace-atom]
-       (do
-         ~@(for [body bodies]
-             `(record-args! ~(str *ns* "/" fn-name) ~atom-sym (quote ~(first body)))))
-       (defn ~fn-name ~doc
-         ~@(map #(instrument-body (str *ns* "/" fn-name) atom-sym %) bodies)))))
+#?(:clj
+    (defmacro instrument [trace-atom defn-code]
+      (assert (= 'defn (first defn-code)))
+      (let [fn-name  (second defn-code)
+            start    (if (string? (nth defn-code 2))
+                       (take 3 defn-code)
+                       (take 2 defn-code))
+            doc      (if (string? (nth defn-code 2)) (nth defn-code 2) "")
+            rest     (if (string? (nth defn-code 2))
+                       (drop 3 defn-code)
+                       (drop 2 defn-code))
+            bodies   (if (vector? (first rest))
+                       [rest]
+                       (vec rest))
+            atom-sym (gensym "spec-provider-atom-")]
+        `(let [~atom-sym ~trace-atom]
+           (do
+             ~@(for [body bodies]
+                 `(record-args! ~(str *ns* "/" fn-name) ~atom-sym (quote ~(first body)))))
+           (defn ~fn-name ~doc
+             ~@(map #(instrument-body (str *ns* "/" fn-name) atom-sym %) bodies))))))
 
 (defn- set-cat-names [cat-spec names]
   (let [parts (partition 2 (drop 1 (second cat-spec)))]
