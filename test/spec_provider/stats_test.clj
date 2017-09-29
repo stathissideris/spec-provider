@@ -28,6 +28,28 @@
             :distinct-values #{1 2}}}
           (collect [[1 2 2]]))))
 
+  (testing "collect vector stats with bigdec?"
+    (is (= #::stats
+           {:sample-count 1
+            :pred-map
+            {sequential?
+             #::stats
+             {:sample-count 1
+              :min-length 3
+              :max-length 3}}
+            :distinct-values #{}
+            :elements-coll
+            #::stats
+            {:sample-count 3
+             :pred-map
+             {bigdec?
+              #::stats
+              {:sample-count 3
+               :min 1M
+               :max 2M}}
+             :distinct-values #{1M 2M}}}
+           (collect [[1M 2M 2M]]))))
+
   (testing "collect positional vector stats"
    (is (= #::stats
           {:distinct-values #{}
