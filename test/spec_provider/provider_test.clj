@@ -380,6 +380,7 @@
     (is (= (into
             #{}
             '((clojure.spec.alpha/def :person/codes (clojure.spec.alpha/coll-of clojure.core/keyword?))
+              (clojure.spec.alpha/def :person/bank-balance clojure.core/bigdec?)
               (clojure.spec.alpha/def :person/phone-number clojure.core/string?)
               (clojure.spec.alpha/def :person/street-number clojure.core/integer?)
               (clojure.spec.alpha/def :person/country clojure.core/string?)
@@ -400,7 +401,7 @@
                  :req
                  [:person/role]
                  :req-un
-                 [:person/address :person/age :person/first-name :person/id :person/k :person/surname]
+                 [:person/address :person/age :person/bank-balance :person/first-name :person/id :person/k :person/surname]
                  :opt-un
                  [:person/codes :person/phone-number]))))
            (set (infer-specs persons :person/person))))))
@@ -411,6 +412,7 @@
     (is (= (into
             #{}
             '((clojure.spec.alpha/def :person/codes (clojure.spec.alpha/coll-of clojure.core/keyword?))
+              (clojure.spec.alpha/def :person/bank-balance clojure.core/bigdec?)
               (clojure.spec.alpha/def :person/phone-number clojure.core/string?)
               (clojure.spec.alpha/def :person/id (clojure.spec.alpha/or :integer clojure.core/integer? :keyword clojure.core/keyword? :string clojure.core/string?))
               (clojure.spec.alpha/def :person/street-number clojure.core/integer?)
@@ -431,7 +433,7 @@
                 :person/person
                 (clojure.spec.alpha/keys
                  :req [:person/role]
-                 :req-un [:person/address :person/age :person/first-name :person/id :person/k :person/surname]
+                 :req-un [:person/address :person/age :person/bank-balance :person/first-name :person/id :person/k :person/surname]
                  :opt-un [:person/codes :person/phone-number]))))
            (set (infer-specs persons :person/person))))))
 
@@ -440,11 +442,13 @@
                 (clojure.spec.alpha/def :person/codes (clojure.spec.alpha/coll-of clojure.core/keyword? :max-gen 5))
                 (clojure.spec.alpha/def :person/first-name clojure.core/string?)
                 (clojure.spec.alpha/def :person/surname clojure.core/string?)
-                (clojure.spec.alpha/def :person/k clojure.core/keyword?)]]
+                (clojure.spec.alpha/def :person/k clojure.core/keyword?)
+                (clojure.spec.alpha/def :person/bank-balance clojure.core/bigdec?)]]
     (is (= (str "(s/def ::id (s/or :numeric pos-int? :string string?))\n"
                 "(s/def ::codes (s/coll-of keyword? :max-gen 5))\n"
                 "(s/def ::first-name string?)\n"
                 "(s/def ::surname string?)\n"
-                "(s/def ::k keyword?)\n")
+                "(s/def ::k keyword?)\n"
+                "(s/def ::bank-balance bigdec?)\n")
            (with-out-str
              (pprint-specs specs 'person 's))))))
