@@ -4,6 +4,8 @@
             [spec-provider.stats :as stats]
             [spec-provider.provider :as provider]))
 
+(defonce reg (atom {}))
+
 (defn- record-arg-values! [fn-name a args]
   (swap! a update-in [fn-name :args] #(stats/update-stats % args {::stats/positional true})))
 
@@ -19,8 +21,7 @@
 (s/def ::simple-arg symbol?)
 (s/def ::vector-destr (s/and vector?
                              (s/cat :args    (s/* ::arg)
-                                    :varargs (s/? (s/cat :amp #{'&}
-                                                         :name symbol?))
+                                    :varargs (s/? ::var-args)
                                     :as      (s/? ::as))))
 
 (s/def ::map-destr (s/or :keys-destr ::keys-destr
@@ -49,23 +50,17 @@
                                    :conform-keys true)))
 
 (s/def ::arg (s/and (complement #{'&})
-                    (s/or :name ::simple-arg
+                    (s/or :simple ::simple-arg
                           :map-destr ::map-destr
                           :vector-destr ::vector-destr)))
 
-(s/def ::args (s/coll-of ::arg :kind vector?))
+(s/def ::var-args (s/cat :amp #{'&} :arg ::arg))
+
+(s/def ::args (s/cat :args (s/* ::arg) :var-args (s/? ::var-args)))
 
 (comment ;; to test
   (pprint (s/conform
            ::args
-           '[a b [[deep1 deep2] v1 v2 & rest :as foo]
-             c d {:keys [foo bar] :as foo2 :or {foo 1 bar 2}}
-             {a "foo" [x y] :point c :cc}
-             [& rest]])))
-
-(comment ;; to test
-  (pprint (s/conform
-           :clojure.core.specs/arg-list
            '[a b [[deep1 deep2] v1 v2 & rest :as foo]
              c d {:keys [foo bar] :as foo2 :or {foo 1 bar 2}}
              {a "foo" [x y] :point c :cc}
@@ -124,26 +119,34 @@
       ~@(drop 1 (butlast body))
       (record-return-value! ~fn-name ~atom-sym ~(last body)))))
 
-(defmacro instrument [trace-atom defn-code]
-  (assert (= 'defn (first defn-code)))
-  (let [fn-name  (second defn-code)
-        start    (if (string? (nth defn-code 2))
-                   (take 3 defn-code)
-                   (take 2 defn-code))
-        doc      (if (string? (nth defn-code 2)) (nth defn-code 2) "")
-        rest     (if (string? (nth defn-code 2))
-                   (drop 3 defn-code)
-                   (drop 2 defn-code))
-        bodies   (if (vector? (first rest))
-                   [rest]
-                   (vec rest))
-        atom-sym (gensym "spec-provider-atom-")]
-    `(let [~atom-sym ~trace-atom]
-       (do
-         ~@(for [body bodies]
-             `(record-args! ~(str *ns* "/" fn-name) ~atom-sym (quote ~(first body)))))
-       (defn ~fn-name ~doc
-         ~@(map #(instrument-body (str *ns* "/" fn-name) atom-sym %) bodies)))))
+(defn- instrument*
+  ([defn-code]
+   (instrument* 'spec-provider.trace/reg defn-code))
+  ([trace-atom defn-code]
+   (assert (= 'defn (first defn-code)))
+   (let [fn-name  (second defn-code)
+         start    (if (string? (nth defn-code 2))
+                    (take 3 defn-code)
+                    (take 2 defn-code))
+         doc      (if (string? (nth defn-code 2)) (nth defn-code 2) "")
+         rest     (if (string? (nth defn-code 2))
+                    (drop 3 defn-code)
+                    (drop 2 defn-code))
+         bodies   (if (vector? (first rest))
+                    [rest]
+                    (vec rest))
+         atom-sym (gensym "spec-provider-atom-")
+         fn-key   (str *ns* "/" fn-name)]
+     `(let [~atom-sym ~trace-atom]
+        (do
+          ~@(for [body bodies]
+              `(record-args! ~fn-key ~atom-sym (quote ~(first body)))))
+        (defn ~fn-name ~doc
+          ~@(map #(instrument-body fn-key atom-sym %) bodies))))))
+
+(defmacro instrument
+  ([& args]
+   (apply instrument* args)))
 
 (defn- set-cat-names [cat-spec names]
   (let [parts (partition 2 (drop 1 (second cat-spec)))]
@@ -162,8 +165,8 @@
 (defn fn-spec [trace-atom fn-name]
   (let [stats        (get @trace-atom (str fn-name))
         arg-names    (map keyword (:arg-names stats))
-        arg-specs    (provider/summarize-stats (:args stats) fn-name)
-        return-specs (provider/summarize-stats (:return stats) fn-name)
+        arg-specs    (provider/summarize-stats (:args stats) (keyword fn-name))
+        return-specs (provider/summarize-stats (:return stats) (keyword fn-name))
         pre-specs    (concat
                       (butlast arg-specs)
                       (butlast return-specs))]
@@ -173,17 +176,20 @@
             :args (-> arg-specs last spec-form)
             :ret  (-> return-specs last spec-form))])))
 
-(defn pprint-fn-spec [trace-atom fn-name domain-ns clojure-spec-ns]
-  (provider/pprint-specs (fn-spec trace-atom fn-name) domain-ns clojure-spec-ns))
+(defn pprint-fn-spec
+  ([fn-name domain-ns clojure-spec-ns]
+   (pprint-fn-spec reg fn-name domain-ns clojure-spec-ns))
+  ([trace-atom fn-name domain-ns clojure-spec-ns]
+   (provider/pprint-specs (fn-spec trace-atom fn-name) domain-ns clojure-spec-ns)))
 
-(defn clear-registry! [reg]
-  (reset! reg {}))
-
-(defonce reg (atom {}))
+(defn clear-registry!
+  ([]
+   (clear-registry! reg))
+  ([reg]
+   (reset! reg {})))
 
 (comment
   (instrument
-   reg
    (defn foo "doc"
      ([a b c d e f g h i j & rest]
       (swap! (atom []) conj 1)
@@ -198,7 +204,9 @@
   )
 
 (comment
+  (pprint (s/conform ::args '[a b c d e f g h i j & rest]))
+  (pprint (s/conform ::args '[a b [[v1 v2] v3] c d {:keys [foo bar]} {:keys [baz], :as bazz}]))
   (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
-  (pprint-fn-spec reg 'spec-provider.trace/foo 'spec-provider.trace 's)
+  (pprint-fn-spec 'spec-provider.trace/foo 'spec-provider.trace 's)
   (-> reg deref (get "spec-provider.trace/foo") :arg-names)
   )
