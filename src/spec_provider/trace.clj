@@ -80,6 +80,66 @@
   (pprint (s/form (s/get-spec :clojure.core.specs/map-binding))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;   apply names  ;;;;;;;;;;;;;
+
+(defn- arg-names [args]
+  (cond
+    (nil? args)
+    nil
+
+    (and (vector? args) (-> args first (= :simple)))
+    (second args)
+
+    (and (vector? args) (-> args first (= :map-destr)))
+    (-> args second second :as)
+
+    (and (vector? args) (-> args first (= :vector-destr)))
+    (-> args second :as :name)
+
+    (:args args)
+    (conj (mapv arg-names (:args args))
+          (-> args :var-args :arg arg-names))))
+
+;;;
+
+(defn- spec-form-type [x]
+  (cond (seq? x) (first x)
+        (and (keyword? x) (namespace x)) :spec-ref
+        :else :default))
+
+(defmulti set-names (fn [spec-form args]
+                      (spec-form-type spec-form)))
+
+(defmethod set-names :default [spec-form _] spec-form)
+
+(defmethod set-names `s/spec [spec-form args]
+  `(s/spec ~(set-names (second spec-form) (-> args second)))) ;;TODO: assumption: (second spec-form) is an s/cat
+
+(defn- set-cat-pair-name [[old-name pred] arg]
+  (let [pred-name (arg-names pred)]
+    [(or (keyword (arg-names arg))
+         pred-name
+         old-name)
+     (set-names pred arg)]))
+
+(defmethod set-names `s/cat
+  [spec-form args]
+  (let [old-names (->> spec-form rest (take-nth 2))
+        preds     (->> spec-form (take-nth 2) rest)
+        args      (not-empty
+                   (remove nil?
+                           (concat (:args args)
+                                   [(-> args :var-args :arg)])))]
+    (if-not args
+      spec-form
+      `(s/cat
+        ~@(doall
+           (mapcat (fn [pair arg]
+                     (set-cat-pair-name pair arg))
+                   (partition 2 (rest spec-form))
+                   args))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn- spec-provider-generated? [x]
   (-> x meta :spec-provider-generated true?))
@@ -206,6 +266,7 @@
 (comment
   (pprint (s/conform ::args '[a b c d e f g h i j & rest]))
   (pprint (s/conform ::args '[a b [[v1 v2] v3] c d {:keys [foo bar]} {:keys [baz], :as bazz}]))
+  (foo 10 20 30 40 50 60 70 80 90 100 110 "string")
   (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
   (pprint-fn-spec 'spec-provider.trace/foo 'spec-provider.trace 's)
   (-> reg deref (get "spec-provider.trace/foo") :arg-names)

@@ -36,3 +36,62 @@
                       e
                       f
                       {:keys [baz] :as bazz}]))))
+
+(deftest set-names-test
+  (is
+   (= `(s/cat
+        :a integer?
+        :b integer?
+        :c integer?
+        :d integer?
+        :rest (s/spec (s/cat :el0 integer? :el1 string?)))
+      (set-names `(s/cat
+                   :el0 integer?
+                   :el1 integer?
+                   :el2 integer?
+                   :el3 integer?
+                   :el4 (s/spec (s/cat :el0 integer? :el1 string?)))
+                 '{:args
+                   [[:simple a]
+                    [:simple b]
+                    [:simple c]
+                    [:simple d]]
+                   :var-args {:amp & :arg [:simple rest]}})))
+  (is
+   (= `(s/cat
+        :a integer?
+        :b integer?
+        :c integer?
+        :d integer?
+        :rest (s/spec (s/cat :el0 integer? :el1 string?)))
+      (set-names `(s/cat
+                   :el0 integer?
+                   :el1 integer?
+                   :el2 integer?
+                   :el3 integer?
+                   :el4 (s/spec (s/cat :el0 integer? :el1 string?)))
+                 (s/conform ::sut/args '[a b c d & rest]))))
+  (is
+   (= `(s/cat
+        :a integer?
+        :b integer?
+        :outer (s/spec
+                (s/cat
+                 :inner (s/spec (s/cat :v1 integer? :v2 integer?))
+                 :v3 integer?))
+        :c integer?
+        :d integer?
+        :el5 (s/keys :req-un [::bar ::foo])
+        :bazz (s/and empty? map?))
+      (set-names `(s/cat
+                   :el0 integer?
+                   :el1 integer?
+                   :el2 (s/spec
+                         (s/cat
+                          :el0 (s/spec (s/cat :el0 integer? :el1 integer?))
+                          :el1 integer?))
+                   :el3 integer?
+                   :el4 integer?
+                   :el5 (s/keys :req-un [::bar ::foo])
+                   :el6 (s/and empty? map?))
+                 (s/conform ::sut/args '[a b [[v1 v2 :as inner] v3 :as outer] c d {:keys [foo bar]} {:keys [baz], :as bazz}])))))
