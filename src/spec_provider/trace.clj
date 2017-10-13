@@ -7,7 +7,10 @@
 (defonce reg (atom {}))
 
 (defn- record-arg-values! [fn-name a args]
-  (swap! a update-in [fn-name :args] #(stats/update-stats % args {::stats/positional true})))
+  (let [arities (-> @a (get fn-name) :arg-names keys set (disj :var-args))]
+    (if (get arities (count args))
+      (swap! a update-in [fn-name :args (count args)] #(stats/update-stats % args {::stats/positional true}))
+      (swap! a update-in [fn-name :args :var-args] #(stats/update-stats % args {::stats/positional true})))))
 
 (defn- record-return-value! [fn-name a val]
   (swap! a update-in [fn-name :return] #(stats/update-stats % val {}))
@@ -208,32 +211,46 @@
   ([& args]
    (apply instrument* args)))
 
-(defn- set-cat-names [cat-spec names]
-  (let [parts (partition 2 (drop 1 (second cat-spec)))]
-    (list
-     `s/spec ;;TODO assumes that all s/cats are wrapped in an s/spec
-     (concat (list `s/cat)
-             (mapcat (fn [name [_ spec]] [name spec]) names parts)))))
-
-(defn spec-form [s]
+(defn- spec-form [s]
   (nth s 2))
 
-(defn update-args [[_ _ _ args :as spec] fun]
-  (into () (-> (into [] spec)
-               (update 3 fun))))
+(defn- args-for-arity [fn-stats arity]
+  (as-> fn-stats $
+    (:arg-names $)
+    (get $ arity)
+    (s/conform ::args $)))
+
+(defn- arity-key [arity]
+  (if (= :var-args arity)
+    :var-args
+    (keyword (str "arity-" arity))))
+
+(defn- arity-order [arity]
+  (if (= :var-args arity)
+    Integer/MAX_VALUE
+    arity))
 
 (defn fn-spec [trace-atom fn-name]
   (let [stats        (get @trace-atom (str fn-name))
-        arg-names    (map keyword (:arg-names stats))
-        arg-specs    (provider/summarize-stats (:args stats) (keyword fn-name))
+        arg-specs    (reduce-kv (fn [m k v]
+                                  (assoc m k (provider/summarize-stats v (keyword fn-name))))
+                                {}
+                                (:args stats))
         return-specs (provider/summarize-stats (:return stats) (keyword fn-name))
         pre-specs    (concat
-                      (butlast arg-specs)
+                      (map butlast (vals arg-specs))
                       (butlast return-specs))]
     (concat
      pre-specs
      [(list `s/fdef (symbol fn-name)
-            :args (-> arg-specs last spec-form)
+            :args (if (= 1 (count arg-specs))
+                    (-> arg-specs first second last spec-form)
+                    `(s/or
+                      ~@(mapcat
+                         (fn [[arity spec]]
+                           [(arity-key arity)
+                            (-> spec last spec-form (set-names (args-for-arity stats arity)))])
+                         (sort-by (comp arity-order first) arg-specs))))
             :ret  (-> return-specs last spec-form))])))
 
 (defn pprint-fn-spec
@@ -267,6 +284,7 @@
   (pprint (s/conform ::args '[a b c d e f g h i j & rest]))
   (pprint (s/conform ::args '[a b [[v1 v2] v3] c d {:keys [foo bar]} {:keys [baz], :as bazz}]))
   (foo 10 20 30 40 50 60 70 80 90 100 110 "string")
+  (foo 10 20 30 40 50 60 70 80 90 100 110 "string" :kkk)
   (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
   (pprint-fn-spec 'spec-provider.trace/foo 'spec-provider.trace 's)
   (-> reg deref (get "spec-provider.trace/foo") :arg-names)

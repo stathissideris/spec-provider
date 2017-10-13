@@ -4,9 +4,12 @@
 ** DONE Collect/infer nilable
 ** DONE Move to clojure 1.9.0-alpha16
 ** DONE BUG: 6.0 results in (clojure.spec/or :double double? :float float?)
-** TODO Collect min/max for numbers -> s/int-in
+** PROG Collect min/max for numbers -> s/int-in
 ** TODO Collect min/max length for strings
 ** TODO Collect min/max length for sequential
 ** TODO Super strict mode that restricts lengths of strings, min/max on numbers, length of lists etc
 ** TODO Collect stats for keyword maps/non-keyword maps separately
 ** TODO Use sample counts from map predicates to decide on optionality of keywords
+** TODO merge pre-specs for function inference
+** TODO handle var-args better to show that some are optional
+** TODO what's best for var-args?
