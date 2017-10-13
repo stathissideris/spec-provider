@@ -1,5 +1,10 @@
 # Version history
 
+## 0.4.10
+
+* Support for inferring BigDecimals (thanks to
+  [Paulo Rafael Feodrippe](https://github.com/pfeodrippe)).
+
 ## 0.4.9
 
 * `:spec-provider.provider/range` option to enable inference of range

@@ -21,7 +21,7 @@ change, possibly flawed.
 To use this library, add this dependency to your `project.clj` file:
 
 ```
-[spec-provider "0.4.9"]
+[spec-provider "0.4.10"]
 ```
 
 [Version history](https://github.com/stathissideris/spec-provider/blob/master/doc/history.md)
@@ -467,9 +467,14 @@ and return values.
   the same stats should be possible. Look at the `provider` namespace,
   write the schema equivalent and send me a pull request!
 
+## Contributors
+
+* [Stathis Sideris](https://github.com/stathissideris) - original author
+* [Paulo Rafael Feodrippe](https://github.com/pfeodrippe)
+
 ## License
 
-Copyright © 2016 Stathis Sideris
+Copyright © 2016-2017 Stathis Sideris
 
 Distributed under the Eclipse Public License either version 1.0 or (at
 your option) any later version.
