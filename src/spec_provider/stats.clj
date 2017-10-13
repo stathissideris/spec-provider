@@ -26,6 +26,7 @@
     double?
     float?
     integer?
+    bigdec?
     keyword?
     boolean?
     sequential?
@@ -39,6 +40,7 @@
    double?
    float?
    integer?
+   bigdec?
    keyword?
    boolean?
    sequential?

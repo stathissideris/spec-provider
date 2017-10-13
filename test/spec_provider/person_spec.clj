@@ -20,13 +20,14 @@
 (s/def ::city string?)
 (s/def ::country string?)
 (s/def ::street-number pos-int?)
+(s/def ::bank-balance bigdec?)
 
 (s/def ::address
   (s/keys :req-un [::street ::city ::country]
           :opt-un [::street-number]))
 
 (s/def ::person
-  (s/keys :req-un [::id ::first-name ::surname ::k ::age ::address]
+  (s/keys :req-un [::id ::first-name ::surname ::k ::age ::address ::bank-balance]
           :opt-un [::phone-number ::codes]
           :req    [:person/role]))
 
