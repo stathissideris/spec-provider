@@ -272,7 +272,8 @@
          rewrite/known-names))))
 (s/fdef summarize-stats
         :args (s/cat :stats (s/nilable ::stats/stats)
-                     :spec-name qualified-keyword?))
+                     :spec-name qualified-keyword?
+                     :options (s/* ::options)))
 
 (defn infer-specs
   ([data spec-name]
@@ -285,6 +286,10 @@
    (let [stats (stats/collect data options)]
      (s/valid? ::stats/stats stats)
      (summarize-stats stats spec-name options))))
+(s/fdef summarize-stats
+        :args (s/cat :data (s/coll-of any?)
+                     :spec-name qualified-keyword?
+                     :options (s/* ::options)))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
   (let [domain-ns (str domain-ns)
