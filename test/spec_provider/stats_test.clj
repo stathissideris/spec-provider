@@ -1,4 +1,5 @@
 (ns spec-provider.stats-test
+  (:refer-clojure :exclude [float?])
   (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]

@@ -3,6 +3,8 @@
             [clojure.walk :as walk]
             [spec-provider.stats :as stats]
             [spec-provider.provider :as provider]
+            [spec-provider.merge :as merge]
+            [spec-provider.rewrite :as rewrite]
             [pretty-spec.core :as pp]))
 
 (defonce reg (atom {}))
@@ -128,12 +130,10 @@
 
 (defmethod set-names `s/cat
   [spec-form args]
-  (let [old-names (->> spec-form rest (take-nth 2))
-        preds     (->> spec-form (take-nth 2) rest)
-        args      (not-empty
-                   (remove nil?
-                           (concat (:args args)
-                                   [(-> args :var-args :arg)])))]
+  (let [args (not-empty
+              (remove nil?
+                      (concat (:args args)
+                              [(-> args :var-args :arg)])))]
     (if-not args
       spec-form
       `(s/cat
@@ -240,20 +240,26 @@
                                    (assoc m k (provider/summarize-stats v (keyword fn-name))))
                                  {}
                                  (:args stats))
-         return-specs (provider/summarize-stats (:return stats) (keyword fn-name))]
-     (concat
-      (mapcat butlast (vals arg-specs))
-      (butlast return-specs)
-      [(list `s/fdef (symbol fn-name)
-             :args (if (= 1 (count arg-specs))
-                     (-> arg-specs first second last spec-form)
-                     `(s/or
-                       ~@(mapcat
-                          (fn [[arity spec]]
-                            [(arity-key arity)
-                             (-> spec last spec-form (set-names (args-for-arity stats arity)))])
-                          (sort-by (comp arity-order first) arg-specs))))
-             :ret  (-> return-specs last spec-form))]))))
+         return-specs (provider/summarize-stats (:return stats) (keyword fn-name))
+         specs
+         (concat
+          (mapcat butlast (vals arg-specs))
+          (butlast return-specs)
+          [(list `s/fdef (symbol fn-name)
+                 :args (if (= 1 (count arg-specs))
+                         (-> arg-specs first second last spec-form)
+                         `(s/or
+                           ~@(mapcat
+                              (fn [[arity spec]]
+                                [(arity-key arity)
+                                 (-> spec last spec-form (set-names (args-for-arity stats arity)))])
+                              (sort-by (comp arity-order first) arg-specs))))
+                 :ret  (-> return-specs last spec-form))])]
+     (-> specs
+         rewrite/merge-same-name-defs
+         rewrite/flatten-ors
+         rewrite/distinct-ors
+         rewrite/fix-or-names))))
 
 (defn pprint-fn-specs
   ([fn-name domain-ns clojure-spec-ns]

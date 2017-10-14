@@ -1,4 +1,5 @@
 (ns spec-provider.trace-test
+  (:refer-clojure :exclude [float?])
   (:require [spec-provider.trace :refer :all :as sut]
             [clojure.test :refer :all]
             [clojure.spec.alpha :as s]))
@@ -108,7 +109,7 @@
       (swap! (atom []) conj 1)
       (swap! (atom []) conj 2)
       ;;{:result (* d (+ a b c))}
-      6)))
+      {:bar 1M})))
 
   (do
     (foo 10 20 30 40 50 60 70 80 90 100 110 "string")

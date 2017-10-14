@@ -10,6 +10,8 @@
 ** TODO Super strict mode that restricts lengths of strings, min/max on numbers, length of lists etc
 ** TODO Collect stats for keyword maps/non-keyword maps separately
 ** TODO Use sample counts from map predicates to decide on optionality of keywords
-** TODO merge pre-specs for function inference
+** DONE merge pre-specs for function inference
 ** TODO handle var-args better to show that some are optional
 ** TODO what's best for var-args?
+** TODO keyword params
+** TODO merge similar types to more general ones for s/or
