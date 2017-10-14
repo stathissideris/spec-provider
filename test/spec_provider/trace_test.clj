@@ -95,3 +95,28 @@
                    :el5 (s/keys :req-un [::bar ::foo])
                    :el6 (s/and empty? map?))
                  (s/conform ::sut/args '[a b [[v1 v2 :as inner] v3 :as outer] c d {:keys [foo bar]} {:keys [baz], :as bazz}])))))
+
+(deftest instrument-test
+  (instrument
+   (defn foo "doc"
+     ([a b c d e f g h i j & rest]
+      (swap! (atom []) conj 1)
+      (swap! (atom []) conj 2)
+      ;;{:result (* d (+ a b c))}
+      6)
+     ([a b [[v1 v2] v3] c d {:keys [foo bar]} {:keys [baz] :as bazz}]
+      (swap! (atom []) conj 1)
+      (swap! (atom []) conj 2)
+      ;;{:result (* d (+ a b c))}
+      6)))
+
+  (do
+    (foo 10 20 30 40 50 60 70 80 90 100 110 "string")
+    (foo 10 20 30 40 50 60 70 80 90 100 110 "string" :kkk)
+    (foo 10 20 30 40 50 60 70 80 90 100 110 "string" {:bar :kkk})
+    (foo 10 20 30 40 50 60 70 80 90 100)
+    (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
+    (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {:bar "also string"}))
+
+  (pprint-fn-specs 'spec-provider.trace-test/foo 'spec-provider.trace-test 's)
+  )

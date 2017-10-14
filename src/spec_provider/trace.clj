@@ -2,17 +2,18 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.walk :as walk]
             [spec-provider.stats :as stats]
-            [spec-provider.provider :as provider]))
+            [spec-provider.provider :as provider]
+            [pretty-spec.core :as pp]))
 
 (defonce reg (atom {}))
 
-(defn- record-arg-values! [fn-name a args]
+(defn record-arg-values! [fn-name a args]
   (let [arities (-> @a (get fn-name) :arg-names keys set (disj :var-args))]
     (if (get arities (count args))
       (swap! a update-in [fn-name :args (count args)] #(stats/update-stats % args {::stats/positional true}))
       (swap! a update-in [fn-name :args :var-args] #(stats/update-stats % args {::stats/positional true})))))
 
-(defn- record-return-value! [fn-name a val]
+(defn record-return-value! [fn-name a val]
   (swap! a update-in [fn-name :return] #(stats/update-stats % val {}))
   val)
 
@@ -230,34 +231,38 @@
     Integer/MAX_VALUE
     arity))
 
-(defn fn-spec [trace-atom fn-name]
-  (let [stats        (get @trace-atom (str fn-name))
-        arg-specs    (reduce-kv (fn [m k v]
-                                  (assoc m k (provider/summarize-stats v (keyword fn-name))))
-                                {}
-                                (:args stats))
-        return-specs (provider/summarize-stats (:return stats) (keyword fn-name))
-        pre-specs    (concat
-                      (map butlast (vals arg-specs))
-                      (butlast return-specs))]
-    (concat
-     pre-specs
-     [(list `s/fdef (symbol fn-name)
-            :args (if (= 1 (count arg-specs))
-                    (-> arg-specs first second last spec-form)
-                    `(s/or
-                      ~@(mapcat
-                         (fn [[arity spec]]
-                           [(arity-key arity)
-                            (-> spec last spec-form (set-names (args-for-arity stats arity)))])
-                         (sort-by (comp arity-order first) arg-specs))))
-            :ret  (-> return-specs last spec-form))])))
+(defn fn-specs
+  ([fn-name]
+   (fn-specs reg fn-name))
+  ([trace-atom fn-name]
+   (let [stats        (get @trace-atom (str fn-name))
+         arg-specs    (reduce-kv (fn [m k v]
+                                   (assoc m k (provider/summarize-stats v (keyword fn-name))))
+                                 {}
+                                 (:args stats))
+         return-specs (provider/summarize-stats (:return stats) (keyword fn-name))]
+     (concat
+      (mapcat butlast (vals arg-specs))
+      (butlast return-specs)
+      [(list `s/fdef (symbol fn-name)
+             :args (if (= 1 (count arg-specs))
+                     (-> arg-specs first second last spec-form)
+                     `(s/or
+                       ~@(mapcat
+                          (fn [[arity spec]]
+                            [(arity-key arity)
+                             (-> spec last spec-form (set-names (args-for-arity stats arity)))])
+                          (sort-by (comp arity-order first) arg-specs))))
+             :ret  (-> return-specs last spec-form))]))))
 
-(defn pprint-fn-spec
+(defn pprint-fn-specs
   ([fn-name domain-ns clojure-spec-ns]
-   (pprint-fn-spec reg fn-name domain-ns clojure-spec-ns))
+   (pprint-fn-specs reg fn-name domain-ns clojure-spec-ns))
   ([trace-atom fn-name domain-ns clojure-spec-ns]
-   (provider/pprint-specs (fn-spec trace-atom fn-name) domain-ns clojure-spec-ns)))
+   (doseq [spec (fn-specs trace-atom fn-name)]
+     (-> spec
+         (provider/unqualify-spec domain-ns nil)
+         (pp/pprint {:ns-aliases {"clojure.spec.alpha" (str clojure-spec-ns)}})))))
 
 (defn clear-registry!
   ([]
@@ -285,7 +290,10 @@
   (pprint (s/conform ::args '[a b [[v1 v2] v3] c d {:keys [foo bar]} {:keys [baz], :as bazz}]))
   (foo 10 20 30 40 50 60 70 80 90 100 110 "string")
   (foo 10 20 30 40 50 60 70 80 90 100 110 "string" :kkk)
+  (foo 10 20 30 40 50 60 70 80 90 100 110 "string" {:bar :kkk})
+  (foo 10 20 30 40 50 60 70 80 90 100)
   (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
-  (pprint-fn-spec 'spec-provider.trace/foo 'spec-provider.trace 's)
+  (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {:bar "also string"})
+  (pprint-fn-specs 'spec-provider.trace/foo 'spec-provider.trace 's)
   (-> reg deref (get "spec-provider.trace/foo") :arg-names)
   )

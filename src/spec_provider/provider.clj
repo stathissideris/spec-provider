@@ -295,16 +295,18 @@
                      :options (s/* ::options)))
 
 (defn unqualify-spec [spec domain-ns clojure-spec-ns]
-  (let [domain-ns (str domain-ns)
-        clojure-spec-ns (str clojure-spec-ns)]
+  (let [domain-ns       (when domain-ns (str domain-ns))
+        clojure-spec-ns (when clojure-spec-ns (str clojure-spec-ns))]
     (walk/postwalk
      (fn [x]
-       (cond (and (symbol? x) (= "clojure.spec.alpha" (namespace x)))
+       (cond (and clojure-spec-ns (symbol? x) (= "clojure.spec.alpha" (namespace x)))
                (symbol clojure-spec-ns (name x))
              (and (symbol? x) (= "clojure.core" (namespace x)))
                (symbol (name x))
-             (and (keyword? x) (= domain-ns (namespace x)))
+             (and domain-ns (keyword? x) (= domain-ns (namespace x)))
                (symbol (str "::" (name x))) ;;nasty hack to get the printer to print ::foo
+             (and domain-ns (symbol? x) (= domain-ns (namespace x)))
+               (-> x name symbol)
              :else x))
      spec)))
 
