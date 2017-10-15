@@ -233,13 +233,6 @@
           :else
           (concat (list `s/or) (apply concat (sort-by first summaries))))))
 
-(defn- maybe-promote-spec ;;TODO move to rewrite namespace
-  "Promote s/cat to top level if it's wrapped inside a (s/spec ...)"
-  [spec]
-  (if (and (seq? spec) (= `s/spec (first spec)))
-    (second spec)
-    spec))
-
 (defn- flatten-stats [stats spec-name]
   (let [children (comp (some-fn (comp ::stats/keys ::stats/map)
                                 ::stats/elements-pos
@@ -267,7 +260,7 @@
          (->> (map #(vector % (get stats %)) (distinct order))
               (map (fn [[stat-name stats]]
                      (let [stat-name (keyword spec-ns (name stat-name))]
-                       [stat-name (maybe-promote-spec (summarize-stats* stats spec-ns stat-name options))])))
+                       [stat-name (rewrite/maybe-promote-spec (summarize-stats* stats spec-ns stat-name options))])))
               (map (fn [[spec-name spec]]
                      (list `s/def spec-name spec))))]
      (-> specs

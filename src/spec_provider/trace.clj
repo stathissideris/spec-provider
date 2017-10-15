@@ -231,6 +231,24 @@
     Integer/MAX_VALUE
     arity))
 
+(defn- format-arity-spec [spec stats arity]
+  (let [spec (-> spec last spec-form (set-names (args-for-arity stats arity)))]
+    (if (= arity :var-args)
+      (let [var-spec (rewrite/maybe-promote-spec (last spec))]
+       (concat
+        (butlast spec)
+        [(rewrite/zip-cat (rewrite/cat-names var-spec)
+                          (map #(rewrite/wrap % `s/?)
+                               (rewrite/cat-preds var-spec)))]))
+      spec)))
+
+(defn- multi-arity-spec [arg-specs stats]
+  `(s/or
+    ~@(mapcat
+       (fn [[arity spec]]
+         [(arity-key arity) (format-arity-spec spec stats arity)])
+       (sort-by (comp arity-order first) arg-specs))))
+
 (defn fn-specs
   ([fn-name]
    (fn-specs reg fn-name))
@@ -247,13 +265,8 @@
           (butlast return-specs)
           [(list `s/fdef (symbol fn-name)
                  :args (if (= 1 (count arg-specs))
-                         (-> arg-specs first second last spec-form)
-                         `(s/or
-                           ~@(mapcat
-                              (fn [[arity spec]]
-                                [(arity-key arity)
-                                 (-> spec last spec-form (set-names (args-for-arity stats arity)))])
-                              (sort-by (comp arity-order first) arg-specs))))
+                         (-> arg-specs vals first (format-arity-spec stats (ffirst arg-specs)))
+                         (multi-arity-spec arg-specs stats))
                  :ret  (-> return-specs last spec-form))])]
      (-> specs
          rewrite/merge-same-name-defs

@@ -4,6 +4,9 @@
             [spec-provider.stats :as stats]
             [spec-provider.util :as util]))
 
+(defn wrap [form wrapper]
+  (list wrapper form))
+
 (defn- nilable? [x]
   (and (list? x) (= `s/nilable (first x))))
 
@@ -16,9 +19,10 @@
 (defn- zip-or [names preds]
   (concat (list `s/or) (mapcat vector names preds)))
 
-(def ^:private cat-names or-names)
-(def ^:private cat-preds or-preds)
-(def ^:private zip-cat zip-or)
+(def cat-names or-names)
+(def cat-preds or-preds)
+(defn zip-cat [names preds]
+  (concat (list `s/cat) (mapcat vector names preds)))
 
 (defn- or? [x]
   (and (seq? x) (= `s/or (first x))))
@@ -35,6 +39,13 @@
        (all-nilable-or* form)
        form))
    form))
+
+(defn maybe-promote-spec
+  "Promote spec to top level if it's wrapped inside a (s/spec ...)"
+  [spec]
+  (if (and (seq? spec) (= `s/spec (first spec)))
+    (second spec)
+    spec))
 
 (defn- spec-name [x]
   (second x))
@@ -106,9 +117,6 @@
                 (map #(or (pred->name %1) %2)
                      (or-preds or-form)
                      (or-names or-form))))
-
-(defn- or? [form]
-  (and (seq? form) (= `s/or (first form))))
 
 (defn fix-or-names
   "Works on the whole tree of specs"
