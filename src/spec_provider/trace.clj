@@ -264,9 +264,12 @@
           (mapcat butlast (vals arg-specs))
           (butlast return-specs)
           [(list `s/fdef (symbol fn-name)
-                 :args (if (= 1 (count arg-specs))
-                         (-> arg-specs vals first (format-arity-spec stats (ffirst arg-specs)))
-                         (multi-arity-spec arg-specs stats))
+                 :args (cond (zero? (count arg-specs))
+                             `(s/cat)
+                             (= 1 (count arg-specs))
+                             (-> arg-specs vals first (format-arity-spec stats (ffirst arg-specs)))
+                             :else
+                             (multi-arity-spec arg-specs stats))
                  :ret  (-> return-specs last spec-form))])]
      (-> specs
          rewrite/merge-same-name-defs

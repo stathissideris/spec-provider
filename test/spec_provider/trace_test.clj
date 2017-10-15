@@ -98,9 +98,26 @@
                  (s/conform ::sut/args '[a b [[v1 v2 :as inner] v3 :as outer] c d {:keys [foo bar]} {:keys [baz], :as bazz}])))))
 
 (deftest instrument-test
+  (testing "test 0"
+    (instrument (defn foo0 [] "lol"))
+    (foo0)
+    (is
+     (= [`(s/fdef foo0 :args (s/cat ) :ret string?)]
+        (fn-specs 'spec-provider.trace-test/foo0))))
+  ;;(pprint-fn-specs 'spec-provider.trace-test/foo0 'spec-provider.trace-test 's)
+
+  (testing "test 0-1"
+    (instrument (defn foo0-1 [] {:bar "test"}))
+    (foo0-1)
+    (is
+     (= [`(s/def ::bar string?)
+         `(s/fdef foo0-1 :args (s/cat) :ret (s/keys :req-un [::bar]))]
+        (fn-specs 'spec-provider.trace-test/foo0-1))))
+  ;;(pprint-fn-specs 'spec-provider.trace-test/foo0-1 'spec-provider.trace-test 's)
+
   (testing "test 1"
    (instrument
-    (defn foo "doc"
+    (defn foo1 "doc"
       ([a b c d e f g h i j & rest]
        (swap! (atom []) conj 1)
        (swap! (atom []) conj 2)
@@ -113,14 +130,14 @@
        {:bar 1M})))
 
    (do
-     (foo 10 20 30 40 50 60 70 80 90 100 110 "string")
-     (foo 10 20 30 40 50 60 70 80 90 100 110 "string" :kkk)
-     (foo 10 20 30 40 50 60 70 80 90 100 110 "string" {:bar :kkk})
-     (foo 10 20 30 40 50 60 70 80 90 100)
-     (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
-     (foo 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {:bar "also string"}))
+     (foo1 10 20 30 40 50 60 70 80 90 100 110 "string")
+     (foo1 10 20 30 40 50 60 70 80 90 100 110 "string" :kkk)
+     (foo1 10 20 30 40 50 60 70 80 90 100 110 "string" {:bar :kkk})
+     (foo1 10 20 30 40 50 60 70 80 90 100)
+     (foo1 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
+     (foo1 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {:bar "also string"}))
 
-   (pprint-fn-specs 'spec-provider.trace-test/foo 'spec-provider.trace-test 's))
+   (pprint-fn-specs 'spec-provider.trace-test/foo1 'spec-provider.trace-test 's))
 
   (testing "test 2"
    (instrument
