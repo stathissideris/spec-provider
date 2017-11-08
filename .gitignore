@@ -9,3 +9,7 @@ pom.xml.asc
 /.nrepl-port
 .hgignore
 .hg/
+out
+*.un~
+*.clj~
+*.cljc~

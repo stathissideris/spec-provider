@@ -208,10 +208,12 @@
         (defn ~fn-name ~doc
           ~@(map #(instrument-body fn-key atom-sym %) bodies))))))
 
-(defmacro instrument
-  ([& args]
-   (apply instrument* args)))
 
+#?(:clj
+    (defmacro instrument
+      ([& args]
+        (apply instrument* args))))
+  
 (defn- spec-form [s]
   (nth s 2))
 

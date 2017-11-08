@@ -1,12 +1,21 @@
 (ns spec-provider.provider
-  (:require [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as gen]
-            [clojure.spec.test.alpha]
-            [spec-provider.stats :as stats]
-            [spec-provider.merge :refer [merge-stats merge-pred-stats]]
-            [spec-provider.rewrite :as rewrite]
-            [clojure.walk :as walk]
-            [clojure.pprint :refer [pprint]]))
+  #?(:cljs (:require [clojure.spec.alpha :as s]
+                     [clojure.spec.gen.alpha :as gen]
+                     [clojure.spec.test.alpha]
+                     [spec-provider.stats :as stats]
+                     [spec-provider.merge :refer [merge-stats merge-pred-stats]]
+                     [spec-provider.rewrite :as rewrite]
+                     [clojure.walk :as walk]
+                     [clojure.pprint :refer [pprint]]
+                     [goog.string.format :refer [format]])
+     :clj (:require [clojure.spec.alpha :as s]
+                    [clojure.spec.gen.alpha :as gen]
+                    [clojure.spec.test.alpha]
+                    [spec-provider.stats :as stats]
+                    [spec-provider.merge :refer [merge-stats merge-pred-stats]]
+                    [spec-provider.rewrite :as rewrite]
+                    [clojure.walk :as walk]
+                    [clojure.pprint :refer [pprint]])))
 
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an

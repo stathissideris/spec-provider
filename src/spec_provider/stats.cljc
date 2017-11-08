@@ -95,11 +95,16 @@
         number (number? x)
         counted (or (counted? x) (string? x))
         c (when counted (count x))]
-    (cond-> s
-      (and number (< x (or (::min s) Long/MAX_VALUE))) (assoc ::min x)
-      (and number (> x (or (::max s) Long/MIN_VALUE))) (assoc ::max x)
-      (and c (< c (or (::min-length s) Long/MAX_VALUE))) (assoc ::min-length c)
-      (and c (> c (or (::max-length s) Long/MIN_VALUE))) (assoc ::max-length c))))
+    #?(:clj (cond-> s
+              (and number (< x (or (::min s) Long/MAX_VALUE))) (assoc ::min x)
+              (and number (> x (or (::max s) Long/MIN_VALUE))) (assoc ::max x)
+              (and c (< c (or (::min-length s) Long/MAX_VALUE))) (assoc ::min-length c)
+              (and c (> c (or (::max-length s) Long/MIN_VALUE))) (assoc ::max-length c))
+       :cljs (cond-> s
+               (and number (< x (or (::min s) js/Number.MAX_VALUE))) (assoc ::min x)
+               (and number (> x (or (::max s) js/Number.MIN_VALUE))) (assoc ::max x)
+               (and c (< c (or (::min-length s) js/Number.MAX_VALUE))) (assoc ::min-length c)
+               (and c (> c (or (::max-length s) js/Number.MIN_VALUE))) (assoc ::max-length c)))))
 (s/fdef update-pred-stats
         :args (s/cat :pred-stats (s/nilable ::pred-stats) :value any?)
         :ret ::pred-stats)
