@@ -31,7 +31,8 @@
    double?                  `double?
    stats/float?             `float?
    integer?                 `integer?
-   bigdec?                  `bigdec?
+   #?@(:clj 
+        [bigdec?                  `bigdec?])
    keyword?                 `keyword?
    boolean?                 `boolean?
    set?                     `set?
@@ -44,7 +45,8 @@
    double?                  :double
    stats/float?             :float
    integer?                 :integer
-   bigdec?                  :bigdec
+   #?@(:clj 
+        [bigdec?                  :bigdec])
    keyword?                 :keyword
    boolean?                 :boolean
    set?                     :set

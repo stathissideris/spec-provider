@@ -6,7 +6,7 @@
 
   :dependencies [[org.clojure/clojure "1.9.0-beta2"]
                  [pretty-spec "0.1.3"]
-                 [org.clojure/clojurescript "1.9.671"]]
+                 [org.clojure/clojurescript "1.9.908"]]
 
   :profiles {:dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.11"]
