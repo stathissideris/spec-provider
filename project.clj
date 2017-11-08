@@ -5,7 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
 
   :dependencies [[org.clojure/clojure "1.9.0-beta2"]
-                 [pretty-spec "0.1.3"]]
+                 [pretty-spec "0.1.3"]
                  [org.clojure/clojurescript "1.9.671"]]
 
   :profiles {:dev {:source-paths ["dev"]
