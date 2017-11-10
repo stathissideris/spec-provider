@@ -26,7 +26,7 @@
     double?
     float?
     integer?
-    #?@(:clj [bigdec?])
+    #?@(:clj [decimal?])
     keyword?
     boolean?
     sequential?
@@ -40,7 +40,7 @@
    double?
    float?
    integer?
-   #?@(:clj [bigdec?])
+   #?@(:clj [decimal?])
    keyword?
    boolean?
    sequential?

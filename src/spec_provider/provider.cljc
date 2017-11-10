@@ -1,21 +1,13 @@
 (ns spec-provider.provider
-  #?(:cljs (:require [clojure.spec.alpha :as s]
-                     [clojure.spec.gen.alpha :as gen]
-                     [clojure.spec.test.alpha]
-                     [spec-provider.stats :as stats]
-                     [spec-provider.merge :refer [merge-stats merge-pred-stats]]
-                     [spec-provider.rewrite :as rewrite]
-                     [clojure.walk :as walk]
-                     [clojure.pprint :refer [pprint]]
-                     [goog.string.format :refer [format]])
-     :clj (:require [clojure.spec.alpha :as s]
-                    [clojure.spec.gen.alpha :as gen]
-                    [clojure.spec.test.alpha]
-                    [spec-provider.stats :as stats]
-                    [spec-provider.merge :refer [merge-stats merge-pred-stats]]
-                    [spec-provider.rewrite :as rewrite]
-                    [clojure.walk :as walk]
-                    [clojure.pprint :refer [pprint]])))
+  (:require [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen]
+            [clojure.spec.test.alpha]
+            [spec-provider.stats :as stats]
+            [spec-provider.merge :refer [merge-stats merge-pred-stats]]
+            [spec-provider.rewrite :as rewrite]
+            [clojure.walk :as walk]
+            [clojure.pprint :refer [pprint]]
+            #?(:cljs [goog.string.format :refer [format]])))
 
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an
@@ -32,7 +24,7 @@
    stats/float?             `float?
    integer?                 `integer?
    #?@(:clj 
-        [bigdec?                  `bigdec?])
+        [decimal?                  `decimal?])
    keyword?                 `keyword?
    boolean?                 `boolean?
    set?                     `set?
@@ -46,7 +38,7 @@
    stats/float?             :float
    integer?                 :integer
    #?@(:clj 
-        [bigdec?                  :bigdec])
+        [decimal?                  :decimal])
    keyword?                 :keyword
    boolean?                 :boolean
    set?                     :set
@@ -57,7 +49,7 @@
 (def number-spec? #{'clojure.core/double?
                     'clojure.core/float?
                     'clojure.core/integer?
-                    'clojure.core/bigdec?})
+                    'clojure.core/decimal?})
 
 (defn- wrap-nilable [nilable? form]
   (if-not nilable?

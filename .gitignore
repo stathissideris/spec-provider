@@ -13,3 +13,4 @@ out
 *.un~
 *.clj~
 *.cljc~
+*.swp
