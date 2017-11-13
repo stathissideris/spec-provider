@@ -297,7 +297,8 @@
      (fn [x]
        (cond (and clojure-spec-ns (symbol? x) 
                   #?(:clj (= "clojure.spec.alpha" (namespace x))
-                     :cljs (= "cljs.spec.alpha" (namespace x))))
+                     :cljs (or (= "clojure.spec.alpha" (namespace x))
+                               (= "cljs.spec.alpha" (namespace x)))))
                (symbol clojure-spec-ns (name x))             
              (and (symbol? x) 
                   #?(:clj (= "clojure.core" (namespace x))
