@@ -1,11 +1,14 @@
 (ns spec-provider.trace
+  #?(:cljs (:require-macros
+             [spec-provider.trace :refer [instrument]]))
   (:require [clojure.spec.alpha :as s]
             [clojure.walk :as walk]
             [spec-provider.stats :as stats]
             [spec-provider.provider :as provider]
             [spec-provider.merge :as merge]
             [spec-provider.rewrite :as rewrite]
-            [pretty-spec.core :as pp]))
+            #?(:clj [pretty-spec.core :as pp]
+               :cljs [clojure.pprint :as pp])))
 
 (defonce reg (atom {}))
 
@@ -208,10 +211,13 @@
         (defn ~fn-name ~doc
           ~@(map #(instrument-body fn-key atom-sym %) bodies))))))
 
-(defmacro instrument
-  ([& args]
-   (apply instrument* args)))
 
+
+#?(:clj
+    (defmacro instrument
+      ([& args]
+        (apply instrument* args))))
+  
 (defn- spec-form [s]
   (nth s 2))
 
@@ -228,7 +234,9 @@
 
 (defn- arity-order [arity]
   (if (= :var-args arity)
-    Integer/MAX_VALUE
+    ;;Integer/MAX_VALUE
+    #?(:clj Integer/MAX_VALUE
+       :cljs (js/Math.pow 2 53))
     arity))
 
 (defn- format-arity-spec [spec stats arity]
@@ -283,9 +291,9 @@
   ([trace-atom fn-name domain-ns clojure-spec-ns]
    (doseq [spec (fn-specs trace-atom fn-name)]
      (-> spec
-         (provider/unqualify-spec domain-ns nil)
-         (pp/pprint {:ns-aliases {"clojure.spec.alpha" (str clojure-spec-ns)}})))))
-
+         (provider/unqualify-spec domain-ns #?(:clj nil :cljs clojure-spec-ns))
+         (pp/pprint #?(:clj {:ns-aliases {"clojure.spec.alpha" (str clojure-spec-ns)}}))))))
+         
 (defn clear-registry!
   ([]
    (clear-registry! reg))

@@ -6,7 +6,8 @@
             [spec-provider.merge :refer [merge-stats merge-pred-stats]]
             [spec-provider.rewrite :as rewrite]
             [clojure.walk :as walk]
-            [clojure.pprint :refer [pprint]]))
+            [clojure.pprint :refer [pprint]]
+            #?(:cljs [goog.string.format :refer [format]])))
 
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an
@@ -22,7 +23,8 @@
    double?                  `double?
    stats/float?             `float?
    integer?                 `integer?
-   bigdec?                  `bigdec?
+   #?@(:clj 
+        [decimal?                  `decimal?])
    keyword?                 `keyword?
    boolean?                 `boolean?
    set?                     `set?
@@ -35,7 +37,8 @@
    double?                  :double
    stats/float?             :float
    integer?                 :integer
-   bigdec?                  :bigdec
+   #?@(:clj 
+        [decimal?                  :decimal])
    keyword?                 :keyword
    boolean?                 :boolean
    set?                     :set
@@ -46,7 +49,7 @@
 (def number-spec? #{'clojure.core/double?
                     'clojure.core/float?
                     'clojure.core/integer?
-                    'clojure.core/bigdec?})
+                    'clojure.core/decimal?})
 
 (defn- wrap-nilable [nilable? form]
   (if-not nilable?
@@ -292,9 +295,14 @@
         clojure-spec-ns (when clojure-spec-ns (str clojure-spec-ns))]
     (walk/postwalk
      (fn [x]
-       (cond (and clojure-spec-ns (symbol? x) (= "clojure.spec.alpha" (namespace x)))
-               (symbol clojure-spec-ns (name x))
-             (and (symbol? x) (= "clojure.core" (namespace x)))
+       (cond (and clojure-spec-ns (symbol? x) 
+                  #?(:clj (= "clojure.spec.alpha" (namespace x))
+                     :cljs (or (= "clojure.spec.alpha" (namespace x))
+                               (= "cljs.spec.alpha" (namespace x)))))
+               (symbol clojure-spec-ns (name x))             
+             (and (symbol? x) 
+                  #?(:clj (= "clojure.core" (namespace x))
+                     :cljs (= "cljs.core" (namespace x))))
                (symbol (name x))
              (and domain-ns (keyword? x) (= domain-ns (namespace x)))
                (symbol (str "::" (name x))) ;;nasty hack to get the printer to print ::foo

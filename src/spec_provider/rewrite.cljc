@@ -99,7 +99,7 @@
    'clojure.core/double?       :double
    'spec-provider.stats/float? :float
    'clojure.core/integer?      :integer
-   'clojure.core/bigdec?       :bigdec
+   'clojure.core/decimal?      :decimal
    'clojure.core/keyword?      :keyword
    'clojure.core/boolean?      :boolean
    'clojure.core/set?          :set

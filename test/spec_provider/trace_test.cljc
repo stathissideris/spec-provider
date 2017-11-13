@@ -1,13 +1,18 @@
 (ns spec-provider.trace-test
+<<<<<<< HEAD:test/spec_provider/trace_test.clj
   (:refer-clojure :exclude [float?])
   (:require [spec-provider.trace :refer :all :as sut]
             [clojure.test :refer :all]
             [clojure.spec.alpha :as s]))
+=======
+  (:require [spec-provider.trace :as trace]
+            [clojure.test :refer [deftest testing is]]))
+>>>>>>> 25ae445a37eb295c1c8e54c4b5c85a16903467df:test/spec_provider/trace_test.cljc
 
 (deftest record-args-test
   (let [a (atom {})]
-    (record-args! "fun" a '[a b c])
-    (record-args! "fun" a '[a b & rest])
+    (trace/record-args! "fun" a '[a b c])
+    (trace/record-args! "fun" a '[a b & rest])
     (is (= {"fun" {:arg-names {3         '[a b c]
                                :var-args '[a b & rest]}}} @a))))
 
