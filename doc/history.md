@@ -1,5 +1,11 @@
 # Version history
 
+## 0.4.11
+
+* Fix compatibility with Clojure 1.9.0 by removing `bigdec?` in favour
+  of `decimal?` - see
+  [issue 18](https://github.com/stathissideris/spec-provider/issues/18).
+
 ## 0.4.10
 
 * Support for inferring BigDecimals (thanks to

@@ -1,9 +1,9 @@
-(defproject spec-provider "0.4.10"
+(defproject spec-provider "0.4.11"
   :description "Infer clojure specs from sample data. Inspired by F#'s type providers."
   :url "https://github.com/stathissideris/spec-provider"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-beta2"]
+  :dependencies [[org.clojure/clojure "1.9.0"]
                  [pretty-spec "0.1.3"]]
   :profiles {:dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.11"]

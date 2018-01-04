@@ -22,7 +22,7 @@
    double?                  `double?
    stats/float?             `float?
    integer?                 `integer?
-   bigdec?                  `bigdec?
+   decimal?                 `decimal?
    keyword?                 `keyword?
    boolean?                 `boolean?
    set?                     `set?
@@ -35,7 +35,7 @@
    double?                  :double
    stats/float?             :float
    integer?                 :integer
-   bigdec?                  :bigdec
+   decimal?                 :decimal
    keyword?                 :keyword
    boolean?                 :boolean
    set?                     :set
@@ -46,7 +46,7 @@
 (def number-spec? #{'clojure.core/double?
                     'clojure.core/float?
                     'clojure.core/integer?
-                    'clojure.core/bigdec?})
+                    'clojure.core/decimal?})
 
 (defn- wrap-nilable [nilable? form]
   (if-not nilable?
