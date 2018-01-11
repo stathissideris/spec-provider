@@ -32,7 +32,8 @@
     sequential?
     set?
     map?
-    symbol?)))
+    symbol?
+    inst?)))
 
 (def ^:dynamic preds
   [nil?
@@ -47,6 +48,7 @@
    set?
    map?
    symbol?
+   inst?
    none-of-the-above?])
 
 (s/def ::distinct-values (s/* any?))

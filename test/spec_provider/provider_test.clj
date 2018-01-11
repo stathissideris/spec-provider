@@ -59,6 +59,9 @@
 
   (is (infer-specs (gen/sample (s/gen integer?) 1000) :foo/int))
 
+  (is (= '((clojure.spec.alpha/def :foo/date clojure.core/inst?))
+         (infer-specs (gen/sample (s/gen inst?) 100) :foo/date)))
+
   (is (infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) :foo/coll-of-ints))
 
   (testing "map optional keys"
