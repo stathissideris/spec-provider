@@ -82,7 +82,7 @@ correct, but not very useful for pasting into your code. Luckily, you
 can do:
 
 ```clojure
-> (pprint-specs inferred-specs 'toy 's)
+> (sp/pprint-specs inferred-specs 'toy 's)
 
 (s/def ::c (s/or :keyword keyword? :string string?))
 (s/def ::b string?)
@@ -158,8 +158,8 @@ Which generates structures like:
 Now watch what happens when we infer the spec of `persons`:
 
 ```clojure
-> (provider/pprint-specs
-   (provider/infer-specs persons :person/person)
+> (sp/pprint-specs
+   (sp/infer-specs persons :person/person)
    'person 's)
 
 (s/def ::codes (s/coll-of keyword?))
@@ -230,8 +230,8 @@ when calling `pprint-specs` we indicated that we are going to paste
 this into the `person` namespace.
 
 ```clojure
-> (provider/pprint-specs
-   (provider/infer-specs persons :person/person)
+> (sp/pprint-specs
+   (sp/infer-specs persons :person/person)
    'person 's)
 
 ...
@@ -287,7 +287,7 @@ Looking at the actual numbers can make this logic easier to
 understand. For the small sample above:
 
 ```clojure
-> (provider/infer-specs (gen/sample (s/gen ::role) 5) ::role)
+> (sp/infer-specs (gen/sample (s/gen ::role) 5) ::role)
 
 ((clojure.spec/def :spec-provider.person-spec/role keyword?))
 ```
@@ -300,7 +300,7 @@ likely to be an enumeration, so it's interpreted as a normal value.
 If you increase the sample:
 
 ```clojure
-> (provider/infer-specs (gen/sample (s/gen ::role) 100) ::role)
+> (sp/infer-specs (gen/sample (s/gen ::role) 100) ::role)
 
 ((clojure.spec/def :spec-provider.person-spec/role #{:programmer :designer}))
 ```
@@ -333,8 +333,8 @@ Inferring the spec of `persons-spiked` yields a different result for
 ids:
 
 ```clojure
-> (provider/pprint-specs
-   (provider/infer-specs persons-spiked :person/person)
+> (sp/pprint-specs
+   (sp/infer-specs persons-spiked :person/person)
    'person 's)
 
 ...
@@ -350,9 +350,9 @@ for forms that already occur elsewhere and replace them with the name
 of the known spec. For example:
 
 ```clojure
-> (pprint-specs
-   (infer-specs [{:a [{:zz 1}] :b {:zz 2}}
-                 {:a [{:zz 1} {:zz 4} nil] :b nil}] ::foo) *ns* 's)
+> (sp/pprint-specs
+    (sp/infer-specs [{:a [{:zz 1}] :b {:zz 2}}
+                     {:a [{:zz 1} {:zz 4} nil] :b nil}] ::foo) *ns* 's)
 
 (s/def ::zz integer?)
 (s/def ::b (s/nilable (s/keys :req-un [::zz])))
@@ -373,12 +373,12 @@ get range predicates in your specs you have to pass the
 `:spec-provider.provider/range` option:
 
 ```clojure
-> (require '[spec-provider.provider :refer :all :as pr])
+> (require '[spec-provider.provider :refer :all :as sp])
 
 > (pprint-specs
     (infer-specs [{:foo 3, :bar -400}
                   {:foo 3, :bar 4}
-                  {:foo 10, :bar 400}] ::stuff {::pr/range true})
+                  {:foo 10, :bar 400}] ::stuff {::sp/range true})
     *ns* 's)
 
 (s/def ::bar (s/and integer? (fn [x] (<= -400 x 400))))
@@ -391,10 +391,10 @@ set of qualified keys that are the names of the specs that should get
 a range predicate:
 
 ```clojure
-> (pprint-specs
-    (infer-specs [{:foo 3, :bar -400}
-                  {:foo 3, :bar 4}
-                  {:foo 10, :bar 400}] ::stuff {::pr/range #{::foo}})
+> (sp/pprint-specs
+    (sp/infer-specs [{:foo 3, :bar -400}
+                     {:foo 3, :bar 4}
+                     {:foo 10, :bar 400}] ::stuff {::sp/range #{::foo}})
     *ns* 's)
 
 (s/def ::bar integer?)
