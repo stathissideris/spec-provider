@@ -1,10 +1,6 @@
 (ns spec-provider.stats-test
-<<<<<<< HEAD:test/spec_provider/stats_test.clj
   (:refer-clojure :exclude [float?])
-  (:require [clojure.test :refer :all]
-=======
   (:require [clojure.test :refer [deftest testing is]]
->>>>>>> 25ae445a37eb295c1c8e54c4b5c85a16903467df:test/spec_provider/stats_test.cljc
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
             [spec-provider.stats :as stats]

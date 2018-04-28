@@ -12,8 +12,11 @@
                                   [org.clojure/test.check "0.9.0"]
                                   [lein-doo "0.1.7"]]}}
 
-  :plugins [[lein-cljsbuild "1.1.6"]
-            [lein-doo "0.1.7"]]
+  :plugins [[lein-cljsbuild "1.1.7"]
+            [lein-doo "0.1.10"]]
+
+  :doo {:build "test-build"
+        :alias {:default [:node]}}
 
   :cljsbuild {:builds [{:id "test-build"
                         :source-paths ["src" "target/classes" "test"]

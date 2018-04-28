@@ -1,6 +1,6 @@
 (ns spec-provider.rewrite-test
   (:require [spec-provider.rewrite :as sut]
-            [clojure.test :refer :all]
+            [clojure.test :refer [deftest testing is]]
             [clojure.spec.alpha :as s]))
 
 (deftest merge-same-name-defs-test
