@@ -1,5 +1,5 @@
 (ns spec-provider.stats
-  (:refer-clojure :exclude [float?])
+  (:refer-clojure :exclude [float? integer?])
   (:require [clojure.spec.alpha :as s]))
 
 (def default-options
@@ -14,9 +14,13 @@
 (s/def ::stats-options
   (s/keys :opt-un [::distinct-limit ::coll-limit ::positional ::positional-limit]))
 
-(defn float? [x]
+(defn float? [x] ;;workaround for Clojure
   (and (clojure.core/float? x)
-       (not (double? x))))
+       (not (clojure.core/double? x))))
+
+(defn integer? [x] ;;workaround for ClojureScript
+  (and (clojure.core/integer? x)
+       (not (clojure.core/double? x))))
 
 (def none-of-the-above?
   (complement

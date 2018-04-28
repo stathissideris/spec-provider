@@ -2,10 +2,8 @@
   (:require [doo.runner :refer-macros [doo-tests]]
             [spec-provider.merge-test]
             [spec-provider.provider-test]
-            [spec-provider.stats-test]
-            [spec-provider.trace-test]))
+            [spec-provider.stats-test]))
 
 (doo-tests 'spec-provider.merge-test
            'spec-provider.provider-test
-           'spec-provider.stats-test
-           'spec-provider.trace-test)
+           'spec-provider.stats-test)

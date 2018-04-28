@@ -49,7 +49,7 @@
                :min 1M
                :max 2M}}
              :distinct-values #{1M 2M}}}
-           (collect [[1M 2M 2M]]))))
+           (stats/collect [[1M 2M 2M]]))))
 
   (testing "collect positional vector stats"
    (is (= #::stats

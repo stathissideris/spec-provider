@@ -46,18 +46,18 @@
         :c integer?
         :d integer?
         :rest (s/spec (s/cat :el0 integer? :el1 string?)))
-      (set-names `(s/cat
-                   :el0 integer?
-                   :el1 integer?
-                   :el2 integer?
-                   :el3 integer?
-                   :el4 (s/spec (s/cat :el0 integer? :el1 string?)))
-                 '{:args
-                   [[:simple a]
-                    [:simple b]
-                    [:simple c]
-                    [:simple d]]
-                   :var-args {:amp & :arg [:simple rest]}})))
+      (sut/set-names `(s/cat
+                       :el0 integer?
+                       :el1 integer?
+                       :el2 integer?
+                       :el3 integer?
+                       :el4 (s/spec (s/cat :el0 integer? :el1 string?)))
+                     '{:args
+                       [[:simple a]
+                        [:simple b]
+                        [:simple c]
+                        [:simple d]]
+                       :var-args {:amp & :arg [:simple rest]}})))
   (is
    (= `(s/cat
         :a integer?
@@ -65,13 +65,13 @@
         :c integer?
         :d integer?
         :rest (s/spec (s/cat :el0 integer? :el1 string?)))
-      (set-names `(s/cat
-                   :el0 integer?
-                   :el1 integer?
-                   :el2 integer?
-                   :el3 integer?
-                   :el4 (s/spec (s/cat :el0 integer? :el1 string?)))
-                 (s/conform ::sut/args '[a b c d & rest]))))
+      (sut/set-names `(s/cat
+                       :el0 integer?
+                       :el1 integer?
+                       :el2 integer?
+                       :el3 integer?
+                       :el4 (s/spec (s/cat :el0 integer? :el1 string?)))
+                     (s/conform ::sut/args '[a b c d & rest]))))
   (is
    (= `(s/cat
         :a integer?
@@ -84,22 +84,22 @@
         :d integer?
         :el5 (s/keys :req-un [::bar ::foo])
         :bazz (s/and empty? map?))
-      (set-names `(s/cat
-                   :el0 integer?
-                   :el1 integer?
-                   :el2 (s/spec
-                         (s/cat
-                          :el0 (s/spec (s/cat :el0 integer? :el1 integer?))
-                          :el1 integer?))
-                   :el3 integer?
-                   :el4 integer?
-                   :el5 (s/keys :req-un [::bar ::foo])
-                   :el6 (s/and empty? map?))
-                 (s/conform ::sut/args '[a b [[v1 v2 :as inner] v3 :as outer] c d {:keys [foo bar]} {:keys [baz], :as bazz}])))))
+      (sut/set-names `(s/cat
+                       :el0 integer?
+                       :el1 integer?
+                       :el2 (s/spec
+                             (s/cat
+                              :el0 (s/spec (s/cat :el0 integer? :el1 integer?))
+                              :el1 integer?))
+                       :el3 integer?
+                       :el4 integer?
+                       :el5 (s/keys :req-un [::bar ::foo])
+                       :el6 (s/and empty? map?))
+                     (s/conform ::sut/args '[a b [[v1 v2 :as inner] v3 :as outer] c d {:keys [foo bar]} {:keys [baz], :as bazz}])))))
 
 (deftest instrument-test
   (testing "test 0"
-    (instrument (defn foo0 [] "lol"))
+    (sut/instrument (defn foo0 [] "lol"))
     (foo0)
     (is
      (= [`(s/fdef foo0 :args (s/cat ) :ret string?)]
@@ -107,7 +107,7 @@
   ;;(pprint-fn-specs 'spec-provider.trace-test/foo0 'spec-provider.trace-test 's)
 
   (testing "test 0-1"
-    (instrument (defn foo0-1 [] {:bar "test"}))
+    (sut/instrument (defn foo0-1 [] {:bar "test"}))
     (foo0-1)
     (is
      (= [`(s/def ::bar string?)
@@ -116,7 +116,7 @@
   ;;(pprint-fn-specs 'spec-provider.trace-test/foo0-1 'spec-provider.trace-test 's)
 
   (testing "test 1"
-   (instrument
+   (sut/instrument
     (defn foo1 "doc"
       ([a b c d e f g h i j & rest]
        (swap! (atom []) conj 1)
@@ -140,7 +140,7 @@
    (pprint-fn-specs 'spec-provider.trace-test/foo1 'spec-provider.trace-test 's))
 
   (testing "test 2"
-   (instrument
+   (sut/instrument
     (defn foo2 "doc"
       [a b c d & rest]
       (swap! (atom []) conj 1)

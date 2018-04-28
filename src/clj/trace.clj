@@ -1,14 +1,18 @@
 (ns spec-provider.trace
-  #?(:cljs (:require-macros
-             [spec-provider.trace :refer [instrument]]))
+  ;; #?(:cljs (:require-macros
+  ;;            [spec-provider.trace :refer [instrument]]))
   (:require [clojure.spec.alpha :as s]
             [clojure.walk :as walk]
             [spec-provider.stats :as stats]
             [spec-provider.provider :as provider]
             [spec-provider.merge :as merge]
             [spec-provider.rewrite :as rewrite]
-            #?(:clj [pretty-spec.core :as pp]
-               :cljs [clojure.pprint :as pp])))
+            [pretty-spec.core :as pp]
+
+            ;; #?(:clj [pretty-spec.core :as pp]
+            ;;    :cljs [clojure.pprint :as pp])
+
+            ))
 
 (defonce reg (atom {}))
 
@@ -217,7 +221,7 @@
     (defmacro instrument
       ([& args]
         (apply instrument* args))))
-  
+
 (defn- spec-form [s]
   (nth s 2))
 
@@ -293,7 +297,7 @@
      (-> spec
          (provider/unqualify-spec domain-ns #?(:clj nil :cljs clojure-spec-ns))
          (pp/pprint #?(:clj {:ns-aliases {"clojure.spec.alpha" (str clojure-spec-ns)}}))))))
-         
+
 (defn clear-registry!
   ([]
    (clear-registry! reg))

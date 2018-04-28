@@ -7,6 +7,9 @@
                  [pretty-spec "0.1.3"]
                  [org.clojure/clojurescript "1.10.238"]]
 
+  :source-paths ["src/clj"
+                 "src/cljc"]
+
   :profiles {:dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.11"]
                                   [org.clojure/test.check "0.9.0"]
@@ -19,7 +22,9 @@
         :alias {:default [:node]}}
 
   :cljsbuild {:builds [{:id "test-build"
-                        :source-paths ["src" "target/classes" "test"]
+                        :source-paths ["src/cljc"
+                                       "test/cljc"
+                                       "target/classes"]
                         :compiler {:output-to "out/testable.js"
                                    :main spec-provider.cljs-test-runner
                                    :target :nodejs
