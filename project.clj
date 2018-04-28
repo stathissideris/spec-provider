@@ -1,12 +1,11 @@
-(defproject spec-provider "0.4.10-cljc"
+(defproject spec-provider "0.4.12"
   :description "Infer clojure specs from sample data. Inspired by F#'s type providers."
   :url "https://github.com/stathissideris/spec-provider"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-
   :dependencies [[org.clojure/clojure "1.9.0-beta2"]
                  [pretty-spec "0.1.3"]
-                 [org.clojure/clojurescript "1.9.908"]]
+                 [org.clojure/clojurescript "1.10.238"]]
 
   :profiles {:dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.11"]
@@ -21,5 +20,4 @@
                         :compiler {:output-to "out/testable.js"
                                    :main spec-provider.cljs-test-runner
                                    :target :nodejs
-                                   :optimizations :none}}]}
-  )
+                                   :optimizations :none}}]})

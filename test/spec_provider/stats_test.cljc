@@ -33,7 +33,7 @@
             :distinct-values #{1 2}}}
           (stats/collect [[1 2 2]]))))
 
-  (testing "collect vector stats with bigdec?"
+  (testing "collect vector stats with decimal?"
     (is (= #::stats
            {:sample-count 1
             :pred-map
@@ -47,7 +47,7 @@
             #::stats
             {:sample-count 3
              :pred-map
-             {bigdec?
+             {decimal?
               #::stats
               {:sample-count 3
                :min 1M

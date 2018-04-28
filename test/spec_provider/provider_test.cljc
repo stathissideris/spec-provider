@@ -61,6 +61,9 @@
 
   (is (pr/infer-specs (gen/sample (s/gen (s/coll-of integer?)) 1000) :foo/coll-of-ints))
 
+  (is (= '((clojure.spec.alpha/def :foo/date clojure.core/inst?))
+         (pr/infer-specs (gen/sample (s/gen inst?) 100) :foo/date)))
+
   (testing "map optional keys"
     (is (= '((clojure.spec.alpha/def :foo/a clojure.core/integer?)
              (clojure.spec.alpha/def :foo/stuff (clojure.spec.alpha/keys :opt-un [:foo/a])))
@@ -380,7 +383,7 @@
     (is (= (into
             #{}
             '((clojure.spec.alpha/def :person/codes (clojure.spec.alpha/coll-of clojure.core/keyword?))
-              (clojure.spec.alpha/def :person/bank-balance clojure.core/bigdec?)
+              (clojure.spec.alpha/def :person/bank-balance clojure.core/decimal?)
               (clojure.spec.alpha/def :person/phone-number clojure.core/string?)
               (clojure.spec.alpha/def :person/street-number clojure.core/integer?)
               (clojure.spec.alpha/def :person/country clojure.core/string?)
@@ -412,7 +415,7 @@
     (is (= (into
             #{}
             '((clojure.spec.alpha/def :person/codes (clojure.spec.alpha/coll-of clojure.core/keyword?))
-              (clojure.spec.alpha/def :person/bank-balance clojure.core/bigdec?)
+              (clojure.spec.alpha/def :person/bank-balance clojure.core/decimal?)
               (clojure.spec.alpha/def :person/phone-number clojure.core/string?)
               (clojure.spec.alpha/def :person/id (clojure.spec.alpha/or :integer clojure.core/integer? :keyword clojure.core/keyword? :string clojure.core/string?))
               (clojure.spec.alpha/def :person/street-number clojure.core/integer?)
@@ -443,12 +446,12 @@
                 (clojure.spec.alpha/def :person/first-name clojure.core/string?)
                 (clojure.spec.alpha/def :person/surname clojure.core/string?)
                 (clojure.spec.alpha/def :person/k clojure.core/keyword?)
-                (clojure.spec.alpha/def :person/bank-balance clojure.core/bigdec?)]]
+                (clojure.spec.alpha/def :person/bank-balance clojure.core/decimal?)]]
     (is (= (str "(s/def ::id (s/or :numeric pos-int? :string string?))\n"
                 "(s/def ::codes (s/coll-of keyword? :max-gen 5))\n"
                 "(s/def ::first-name string?)\n"
                 "(s/def ::surname string?)\n"
                 "(s/def ::k keyword?)\n"
-                "(s/def ::bank-balance bigdec?)\n")
+                "(s/def ::bank-balance decimal?)\n")
            (with-out-str
              (pr/pprint-specs specs 'person 's))))))

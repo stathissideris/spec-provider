@@ -20,7 +20,7 @@
 (s/def ::city string?)
 (s/def ::country string?)
 (s/def ::street-number pos-int?)
-(s/def ::bank-balance bigdec?)
+(s/def ::bank-balance decimal?)
 
 (s/def ::address
   (s/keys :req-un [::street ::city ::country]

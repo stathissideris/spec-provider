@@ -23,13 +23,14 @@
    double?                  `double?
    stats/float?             `float?
    integer?                 `integer?
-   #?@(:clj 
-        [decimal?                  `decimal?])
+   #?@(:clj
+       [decimal?            `decimal?])
    keyword?                 `keyword?
    boolean?                 `boolean?
    set?                     `set?
    map?                     `map?
    symbol?                  `symbol?
+   inst?                    `inst?
    stats/none-of-the-above? `any?})
 
 (def pred->name
@@ -37,13 +38,14 @@
    double?                  :double
    stats/float?             :float
    integer?                 :integer
-   #?@(:clj 
-        [decimal?                  :decimal])
+   #?@(:clj
+       [decimal?            :decimal])
    keyword?                 :keyword
    boolean?                 :boolean
    set?                     :set
    map?                     :map
    symbol?                  :symbol
+   inst?                    :inst
    stats/none-of-the-above? :any})
 
 (def number-spec? #{'clojure.core/double?
@@ -295,12 +297,12 @@
         clojure-spec-ns (when clojure-spec-ns (str clojure-spec-ns))]
     (walk/postwalk
      (fn [x]
-       (cond (and clojure-spec-ns (symbol? x) 
+       (cond (and clojure-spec-ns (symbol? x)
                   #?(:clj (= "clojure.spec.alpha" (namespace x))
                      :cljs (or (= "clojure.spec.alpha" (namespace x))
                                (= "cljs.spec.alpha" (namespace x)))))
-               (symbol clojure-spec-ns (name x))             
-             (and (symbol? x) 
+               (symbol clojure-spec-ns (name x))
+             (and (symbol? x)
                   #?(:clj (= "clojure.core" (namespace x))
                      :cljs (= "cljs.core" (namespace x))))
                (symbol (name x))
