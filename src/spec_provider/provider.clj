@@ -28,6 +28,7 @@
    set?                     `set?
    map?                     `map?
    symbol?                  `symbol?
+   inst?                    `inst?
    stats/none-of-the-above? `any?})
 
 (def pred->name
@@ -41,6 +42,7 @@
    set?                     :set
    map?                     :map
    symbol?                  :symbol
+   inst?                    :inst
    stats/none-of-the-above? :any})
 
 (def number-spec? #{'clojure.core/double?
