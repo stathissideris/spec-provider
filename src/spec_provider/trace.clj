@@ -215,12 +215,9 @@
         (defn ~fn-name ~doc
           ~@(map #(instrument-body fn-key atom-sym %) bodies))))))
 
-
-
-#?(:clj
-    (defmacro instrument
-      ([& args]
-        (apply instrument* args))))
+(defmacro instrument
+   ([& args]
+    (apply instrument* args)))
 
 (defn- spec-form [s]
   (nth s 2))
@@ -238,9 +235,7 @@
 
 (defn- arity-order [arity]
   (if (= :var-args arity)
-    ;;Integer/MAX_VALUE
-    #?(:clj Integer/MAX_VALUE
-       :cljs (js/Math.pow 2 53))
+    Integer/MAX_VALUE
     arity))
 
 (defn- format-arity-spec [spec stats arity]
@@ -295,8 +290,8 @@
   ([trace-atom fn-name domain-ns clojure-spec-ns]
    (doseq [spec (fn-specs trace-atom fn-name)]
      (-> spec
-         (provider/unqualify-spec domain-ns #?(:clj nil :cljs clojure-spec-ns))
-         (pp/pprint #?(:clj {:ns-aliases {"clojure.spec.alpha" (str clojure-spec-ns)}}))))))
+         (provider/unqualify-spec domain-ns nil)
+         (pp/pprint {:ns-aliases {"clojure.spec.alpha" (str clojure-spec-ns)}})))))
 
 (defn clear-registry!
   ([]

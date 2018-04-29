@@ -103,7 +103,7 @@
     (foo0)
     (is
      (= [`(s/fdef foo0 :args (s/cat ) :ret string?)]
-        (fn-specs 'spec-provider.trace-test/foo0))))
+        (sut/fn-specs 'spec-provider.trace-test/foo0))))
   ;;(pprint-fn-specs 'spec-provider.trace-test/foo0 'spec-provider.trace-test 's)
 
   (testing "test 0-1"
@@ -112,7 +112,7 @@
     (is
      (= [`(s/def ::bar string?)
          `(s/fdef foo0-1 :args (s/cat) :ret (s/keys :req-un [::bar]))]
-        (fn-specs 'spec-provider.trace-test/foo0-1))))
+        (sut/fn-specs 'spec-provider.trace-test/foo0-1))))
   ;;(pprint-fn-specs 'spec-provider.trace-test/foo0-1 'spec-provider.trace-test 's)
 
   (testing "test 1"
@@ -137,7 +137,7 @@
      (foo1 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
      (foo1 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {:bar "also string"}))
 
-   (pprint-fn-specs 'spec-provider.trace-test/foo1 'spec-provider.trace-test 's))
+   (sut/pprint-fn-specs 'spec-provider.trace-test/foo1 'spec-provider.trace-test 's))
 
   (testing "test 2"
    (sut/instrument
@@ -171,7 +171,7 @@
                                :el3 string?)))))
            :ret
            integer?)]
-       (fn-specs 'spec-provider.trace-test/foo2)))
+       (sut/fn-specs 'spec-provider.trace-test/foo2)))
 
    ;;(pprint-fn-specs 'spec-provider.trace-test/foo2 'spec-provider.trace-test 's)
    ))

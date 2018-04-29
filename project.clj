@@ -3,12 +3,9 @@
   :url "https://github.com/stathissideris/spec-provider"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.9.0-beta2"]
+  :dependencies [[org.clojure/clojure "1.9.0"]
                  [pretty-spec "0.1.3"]
                  [org.clojure/clojurescript "1.10.238"]]
-
-  :source-paths ["src/clj"
-                 "src/cljc"]
 
   :profiles {:dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.11"]
@@ -19,13 +16,11 @@
   :plugins [[lein-cljsbuild "1.1.7"]
             [lein-doo "0.1.10"]]
 
-  :doo {:build "test-build"
+  :doo {:build "test"
         :alias {:default [:node]}}
 
-  :cljsbuild {:builds [{:id "test-build"
-                        :source-paths ["src/cljc"
-                                       "test/cljc"
-                                       "target/classes"]
+  :cljsbuild {:builds [{:id "test"
+                        :source-paths ["src" "test"]
                         :compiler {:output-to "out/testable.js"
                                    :main spec-provider.cljs-test-runner
                                    :target :nodejs

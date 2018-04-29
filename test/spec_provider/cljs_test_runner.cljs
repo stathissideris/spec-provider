@@ -5,7 +5,7 @@
             [spec-provider.provider-test]
             [spec-provider.stats-test]))
 
-(doo-tests 'spec-provider.provider-test
-           ;;'spec-provider.rewrite-test
+(doo-tests ;;'spec-provider.rewrite-test
            'spec-provider.merge-test
-           'spec-provider.stats-test)
+           'spec-provider.stats-test
+           'spec-provider.provider-test)
