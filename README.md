@@ -446,30 +446,30 @@ Assume this:
 
 There is only one option that affects how the specs are inferred:
 
-`::sp/range` If true, all numerical specs include a
-range predicate. If it's a set of spec names (qualified keywords),
-only these specs will include range predicates. See section
-[Inferring specs with numerical ranges]() for an example (default
-false).
+* `::sp/range` If true, all numerical specs include a range
+  predicate. If it's a set of spec names (qualified keywords), only
+  these specs will include range predicates. See section
+  [Inferring specs with numerical ranges]() for an example (default
+  false).
 
 There is a number of options that can affect how the sample stats are
 collected (and consequently also affect what spec is inferred). These
 options are passed to `stats/collect`, or as part of the options map
 passed to `sp/infer-specs` Assume this:
 
-`::stats/distinct-limit` How many distinct values are collected for
-collections (default 10).
+* `::stats/distinct-limit` How many distinct values are collected for
+  collections (default 10).
 
-`::stats/coll-limit` How many elements of the collection are used to
-infer/collect data about the type of the contained element (default
-101). This means that lazy sequences are at least partly realized.
+* `::stats/coll-limit` How many elements of the collection are used to
+  infer/collect data about the type of the contained element (default
+  101). This means that lazy sequences are at least partly realized.
 
-`::stats/positional` Results in positional stats being collected for
-sequences, so that `s/cat` can be inferred instead of `s/coll-of`
-(default false).
+* `::stats/positional` Results in positional stats being collected for
+  sequences, so that `s/cat` can be inferred instead of `s/coll-of`
+  (default false).
 
-`::stats/positional-limit` Bounds the positional stats length (default
-100).
+* `::stats/positional-limit` Bounds the positional stats length
+  (default 100).
 
 ## Inferring the spec of functions
 
