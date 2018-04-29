@@ -449,7 +449,7 @@ There is only one option that affects how the specs are inferred:
 * `::sp/range` If true, all numerical specs include a range
   predicate. If it's a set of spec names (qualified keywords), only
   these specs will include range predicates. See section
-  [Inferring specs with numerical ranges](inferring-specs-with-numerical-ranges)
+  [Inferring specs with numerical ranges](#inferring-specs-with-numerical-ranges)
   for an example (default false).
 
 There is a number of options that can affect how the sample stats are
