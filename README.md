@@ -5,7 +5,7 @@
 This is a library that will produce a best-guess
 [Clojure spec](https://clojure.org/guides/spec) based on multiple
 examples of in-memory data. The inferred spec is *not* meant to be
-used as is and without human supervision, it is rather a starting
+used as is and without human intervention, it is rather a starting
 point that can (and should) be refined.
 
 The idea is analogous to F# type providers -- specifically the JSON
