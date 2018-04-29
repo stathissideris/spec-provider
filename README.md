@@ -16,6 +16,8 @@ Since Clojure spec is still in alpha, this library should also be
 considered to be in alpha -- so, highly experimental, very likely to
 change, possibly flawed.
 
+This library works in both Clojure and ClojureScript.
+
 ## Usage
 
 To use this library, add this dependency to your `project.clj` file:
