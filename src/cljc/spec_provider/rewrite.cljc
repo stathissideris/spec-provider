@@ -54,7 +54,9 @@
   (nth x 2))
 
 (defn- core? [x]
-  (when (and x (symbol? x)) (= "clojure.core" (namespace x))))
+  (when (and x (symbol? x))
+    (or (= "clojure.core" (namespace x))
+        (= "cljs.core" (namespace x)))))
 
 (defn known-names
   "Replace instances of nested specs that are identical to named

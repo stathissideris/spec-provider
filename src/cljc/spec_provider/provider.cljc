@@ -20,7 +20,7 @@
 
 (def pred->form
   {string?                  `string?
-   double?                  `double?
+   stats/double?            `double?
    stats/float?             `float?
    integer?                 `integer?
    #?@(:clj
@@ -35,7 +35,7 @@
 
 (def pred->name
   {string?                  :string
-   double?                  :double
+   stats/double?            :double
    stats/float?             :float
    integer?                 :integer
    #?@(:clj
@@ -48,10 +48,10 @@
    inst?                    :inst
    stats/none-of-the-above? :any})
 
-(def number-spec? #{'clojure.core/double?
-                    'clojure.core/float?
-                    'clojure.core/integer?
-                    'clojure.core/decimal?})
+(def number-spec? #{`double?
+                    `float?
+                    `integer?
+                    `decimal?})
 
 (defn- wrap-nilable [nilable? form]
   (if-not nilable?
@@ -97,7 +97,7 @@
 
           (> (count pred-map) 1)
           (concat
-           (list 'clojure.spec.alpha/or)
+           (list `s/or)
            (->> (map first pred-map)
                 (map (juxt pred->name
                            (comp (partial wrap-nilable nilable?)

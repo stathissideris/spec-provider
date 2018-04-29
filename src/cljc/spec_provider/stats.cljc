@@ -1,5 +1,5 @@
 (ns spec-provider.stats
-  (:refer-clojure :exclude [float? integer?])
+  (:refer-clojure :exclude [float? double?])
   (:require [clojure.spec.alpha :as s]))
 
 (def default-options
@@ -18,9 +18,9 @@
   (and (clojure.core/float? x)
        (not (clojure.core/double? x))))
 
-(defn integer? [x] ;;workaround for ClojureScript
-  (and (clojure.core/integer? x)
-       (not (clojure.core/double? x))))
+(defn double? [x] ;;workaround for ClojureScript
+  (and (clojure.core/double? x)
+       (not (clojure.core/integer? x))))
 
 (def none-of-the-above?
   (complement

@@ -21,7 +21,7 @@
 (s/def ::country string?)
 (s/def ::street-number pos-int?)
 #?(:clj  (s/def ::bank-balance decimal?)
-   :cljs (s/def ::bank-balance number?))
+   :cljs (s/def ::bank-balance integer?))
 
 (s/def ::address
   (s/keys :req-un [::street ::city ::country]
