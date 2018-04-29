@@ -437,9 +437,16 @@ Dan Lebrero.
 
 ### Options
 
-There is only one option that affects how the specs are inferred.
+Assume this:
 
-`:spec-provider.provider/range` If true, all numerical specs include a
+```clojure
+(require [spec-provider.provider :as sp]
+         [spec-provider.stats :as stats])
+```
+
+There is only one option that affects how the specs are inferred:
+
+`::sp/range` If true, all numerical specs include a
 range predicate. If it's a set of spec names (qualified keywords),
 only these specs will include range predicates. See section
 [Inferring specs with numerical ranges]() for an example (default
@@ -447,13 +454,8 @@ false).
 
 There is a number of options that can affect how the sample stats are
 collected (and consequently also affect what spec is inferred). These
-options are passed to `spec-provider.stats/collect`, or as part of the
-options map passed to `spec-provider.provider/infer-specs` Assume
-this:
-
-```clojure
-(require [spec-provider.stats :as stats])
-```
+options are passed to `stats/collect`, or as part of the options map
+passed to `sp/infer-specs` Assume this:
 
 `::stats/distinct-limit` How many distinct values are collected for
 collections (default 10).
