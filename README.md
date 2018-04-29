@@ -444,7 +444,8 @@ Assume this:
          [spec-provider.stats :as stats])
 ```
 
-There is only one option that affects how the specs are inferred:
+There is only one option that affects how the specs are inferred and
+it can be passed as a map in an extra parameter to `sp/infer-specs`:
 
 * `::sp/range` If true, all numerical specs include a range
   predicate. If it's a set of spec names (qualified keywords), only
@@ -455,7 +456,7 @@ There is only one option that affects how the specs are inferred:
 There is a number of options that can affect how the sample stats are
 collected (and consequently also affect what spec is inferred). These
 options are passed to `stats/collect`, or as part of the options map
-passed to `sp/infer-specs` Assume this:
+passed to `sp/infer-specs`.
 
 * `::stats/distinct-limit` How many distinct values are collected for
   collections (default 10).
