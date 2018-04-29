@@ -424,10 +424,50 @@ After stats collection, code from the `spec-provider.provider`
 namespace goes through the stats and it summarizes it as a collection
 of specs.
 
+### Alternative uses
+
+As mentioned in the previous section, spec-provider first collects
+statistics about the data that you pass to it and then it uses them to
+infer specs for this data. The entry point for collecting stats is the
+`spec-provider.stats/collect` function. This can be used to explore
+your data and give you insight about its structure as it was very
+nicely explained in
+[this blog post](https://akvo.org/blog/production-data-never-lies/) by
+Dan Lebrero.
+
 ### Options
 
-Undocumented: there is a number of options that can affect how the
-sample stats are collected.
+There is only one option that affects how the specs are inferred.
+
+`:spec-provider.provider/range` If true, all numerical specs include a
+range predicate. If it's a set of spec names (qualified keywords),
+only these specs will include range predicates. See section
+[Inferring specs with numerical ranges]() for an example (default
+false).
+
+There is a number of options that can affect how the sample stats are
+collected (and consequently also affect what spec is inferred). These
+options are passed to `spec-provider.stats/collect`, or as part of the
+options map passed to `spec-provider.provider/infer-specs` Assume
+this:
+
+```clojure
+(require [spec-provider.stats :as stats])
+```
+
+`::stats/distinct-limit` How many distinct values are collected for
+collections (default 10).
+
+`::stats/coll-limit` How many elements of the collection are used to
+infer/collect data about the type of the contained element (default
+101). This means that lazy sequences are at least partly realized.
+
+`::stats/positional` Results in positional stats being collected for
+sequences, so that `s/cat` can be inferred instead of `s/coll-of`
+(default false).
+
+`::stats/positional-limit` Bounds the positional stats length (default
+100).
 
 ## Inferring the spec of functions
 
@@ -471,6 +511,11 @@ and return values.
 
 * [Stathis Sideris](https://github.com/stathissideris) - original author
 * [Paulo Rafael Feodrippe](https://github.com/pfeodrippe)
+* [Dan Lebrero](https://github.com/dlebrero)
+* [Marco Molteni](https://github.com/marco-m)
+* [Allan Jiang](https://github.com/jiangts)
+* [Gibran Rosa](https://github.com/gibranrosa)
+
 
 ## License
 
