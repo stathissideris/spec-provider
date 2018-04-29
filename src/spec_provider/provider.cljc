@@ -6,8 +6,7 @@
             [spec-provider.merge :refer [merge-stats merge-pred-stats]]
             [spec-provider.rewrite :as rewrite]
             [clojure.walk :as walk]
-            [clojure.pprint :refer [pprint]]
-            #?(:cljs [goog.string.format :refer [format]])))
+            [clojure.pprint :refer [pprint]]))
 
 ;;this means that if the count of the distinct values is less than 10%
 ;;of the count of total values, then the attribute is considered an
@@ -282,7 +281,7 @@
   ([data spec-name options]
    (when-not (namespace spec-name)
      (throw
-      (ex-info (format "invalid spec-name %s - should be fully-qualified keyword" (str spec-name))
+      (ex-info (str "invalid spec-name " spec-name " - should be fully-qualified keyword")
                {:spec-name spec-name})))
    (let [stats (stats/collect data options)]
      (s/valid? ::stats/stats stats)
