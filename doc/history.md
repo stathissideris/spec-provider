@@ -1,5 +1,10 @@
 # Version history
 
+## 0.4.12
+
+* Support for inst? inference (Dan Lebrero)
+* ClojureScript support (Allan Jiang, Gibran Rosa and Stathis Sideris)
+
 ## 0.4.11
 
 * Fix compatibility with Clojure 1.9.0 by removing `bigdec?` in favour
