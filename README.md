@@ -23,7 +23,7 @@ This library works in both Clojure and ClojureScript.
 To use this library, add this dependency to your `project.clj` file:
 
 ```
-[spec-provider "0.4.12"]
+[spec-provider "0.4.13"]
 ```
 
 [Version history](https://github.com/stathissideris/spec-provider/blob/master/doc/history.md)
