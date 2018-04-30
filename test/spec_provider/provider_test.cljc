@@ -101,7 +101,7 @@
              (s/def ::s/foo clojure.core/integer?)
              (s/def :foobar/a clojure.core/integer?)
              (s/def :foobar/my
-               (s/keys :req    [::gen/bar ::s/foo]
+               (s/keys :req    [::s/foo ::gen/bar]
                        :req-un [:foobar/a]))]
            (pr/infer-specs [{:a 0 ::s/foo 1 ::gen/bar 2}
                             {:a 1 ::s/foo 10 ::gen/bar 20}
