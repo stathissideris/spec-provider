@@ -137,7 +137,8 @@
      (foo1 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {})
      (foo1 1 2 [[3 4] 5] 6 7 {:foo 8 :bar 9} {:bar "also string"}))
 
-   (sut/pprint-fn-specs 'spec-provider.trace-test/foo1 'spec-provider.trace-test 's))
+   ;;(sut/pprint-fn-specs 'spec-provider.trace-test/foo1 'spec-provider.trace-test 's)
+   )
 
   (testing "test 2"
    (sut/instrument
