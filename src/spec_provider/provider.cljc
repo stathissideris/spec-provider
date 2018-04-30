@@ -107,7 +107,7 @@
                 (apply concat))))))
 
 (defn- qualified-key? [k] (some? (namespace k)))
-(defn- qualify-key [k ns] (keyword (str ns) (name k)))
+(defn- qualify-key [k ns] (if (namespace k) k (keyword (str ns) (name k))))
 
 (declare summarize-stats*)
 (defn- summarize-non-keyword-map [keys-stats ns spec-name options]
