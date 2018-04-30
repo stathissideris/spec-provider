@@ -1,5 +1,15 @@
 # Version history
 
+## 0.4.14
+
+* Fix bug that prevented mixed-namespace maps being inferred correctly
+  ([issue 20](https://github.com/stathissideris/spec-provider/issues/20)).
+
+## 0.4.13
+
+* Fix minor Cljs bug involving the format function (Mike Fikes)
+* Facilities for testing in Lumo and Planck (Mike Fikes)
+
 ## 0.4.12
 
 * Support for inst? inference (Dan Lebrero)
