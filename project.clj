@@ -9,15 +9,18 @@
 
   :profiles {:dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.11"]
-                                  [org.clojure/test.check "0.9.0"]
+                                  [org.clojure/test.check "0.10.0-alpha2"]
                                   [lein-doo "0.1.7"]
                                   [pjstadig/humane-test-output "0.8.3"]]}}
 
   :plugins [[lein-cljsbuild "1.1.7"]
-            [lein-doo "0.1.10"]]
+            [lein-doo "0.1.10"]
+            [lein-tach "1.0.0"]]
 
   :doo {:build "test"
         :alias {:default [:node]}}
+
+  :tach {:test-runner-ns spec-provider.cljs-self-test-runner}
 
   :cljsbuild {:builds [{:id "test"
                         :source-paths ["src" "test"]
