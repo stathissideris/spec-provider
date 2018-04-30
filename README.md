@@ -520,7 +520,7 @@ and return values.
 * [Marco Molteni](https://github.com/marco-m)
 * [Allan Jiang](https://github.com/jiangts)
 * [Gibran Rosa](https://github.com/gibranrosa)
-
+* [Mike Fikes](https://github.com/mfikes)
 
 ## License
 
