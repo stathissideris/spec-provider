@@ -512,6 +512,32 @@ and return values.
   the same stats should be possible. Look at the `provider` namespace,
   write the schema equivalent and send me a pull request!
 
+## Developers
+
+Run Clojure unit tests with:
+
+```
+lein test
+```
+
+Run ClojureScript unit tests with (default setup uses node):
+
+```
+lein doo
+```
+
+Run self-hosted ClojureScript unit tests with:
+
+```
+lein tach lumo
+```
+
+and
+
+```
+lein tach planck
+```
+
 ## Contributors
 
 * [Stathis Sideris](https://github.com/stathissideris) - original author
