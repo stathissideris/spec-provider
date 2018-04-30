@@ -263,7 +263,9 @@
          specs
          (->> (map #(vector % (get stats %)) (distinct order))
               (map (fn [[stat-name stats]]
-                     (let [stat-name (keyword spec-ns (name stat-name))]
+                     (let [stat-name (if (namespace stat-name)
+                                       stat-name
+                                       (keyword spec-ns (name stat-name)))]
                        [stat-name (rewrite/maybe-promote-spec (summarize-stats* stats spec-ns stat-name options))])))
               (map (fn [[spec-name spec]]
                      (list `s/def spec-name spec))))]

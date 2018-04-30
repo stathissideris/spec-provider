@@ -96,6 +96,17 @@
     (is (= `[(s/def :foo/stuff (s/and empty? map?))]
            (pr/infer-specs [{}] :foo/stuff))))
 
+  (testing "maps with mixed namespaced keys"
+    (is (= `[(s/def ::gen/bar clojure.core/integer?)
+             (s/def ::s/foo clojure.core/integer?)
+             (s/def :foobar/a clojure.core/integer?)
+             (s/def :foobar/my
+               (s/keys :req    [::gen/bar ::s/foo]
+                       :req-un [:foobar/a]))]
+           (pr/infer-specs [{:a 0 ::s/foo 1 ::gen/bar 2}
+                            {:a 1 ::s/foo 10 ::gen/bar 20}
+                            {:a 2 ::s/foo 100 ::gen/bar 200}] :foobar/my))))
+
   (testing "maps that don't have keywords as keys"
     (is (= `[(s/def
                :foo/stuff
