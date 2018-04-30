@@ -4,7 +4,8 @@
             [clojure.spec.gen.alpha :as gen]
             [spec-provider.provider :as pr]
             [spec-provider.person-spec :as person]
-            [spec-provider.stats :as stats]))
+            [spec-provider.stats :as stats]
+            [clojure.string :as str]))
 
 (deftest summarize-stats-test
   (is (= `((s/def :domain/foo integer?))
@@ -435,7 +436,22 @@
                 "(s/def ::k keyword?)\n"
                 "(s/def ::bank-balance integer?)\n")
            (with-out-str
-             (pr/pprint-specs specs 'person 's))))))
+             (pr/pprint-specs specs 'person 's)))))
+  (testing "maps with mixed namespace keywords"
+    (is (= (str/join
+            "\n"
+            ["(s/def :clojure.spec.gen.alpha/bar integer?)"
+             "(s/def ::foo integer?)"
+             "(s/def :foobar/a integer?)"
+             "(s/def"
+             " :foobar/my"
+             " (s/keys :req [::foo :clojure.spec.gen.alpha/bar] :req-un [:foobar/a]))\n"])
+           (with-out-str
+             (pr/pprint-specs
+              (pr/infer-specs [{:a 0 ::s/foo 1 ::gen/bar 2}
+                               {:a 1 ::s/foo 10 ::gen/bar 20}
+                               {:a 2 ::s/foo 100 ::gen/bar 200}] :foobar/my)
+              'clojure.spec.alpha 's))))))
 
 (deftest person-spec-inference-with-merging-test
   (let [persons (map person/add-inconsistent-id
