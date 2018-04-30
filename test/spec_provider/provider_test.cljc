@@ -440,12 +440,22 @@
   (testing "maps with mixed namespace keywords"
     (is (= (str/join
             "\n"
-            ["(s/def :clojure.spec.gen.alpha/bar integer?)"
-             "(s/def ::foo integer?)"
-             "(s/def :foobar/a integer?)"
-             "(s/def"
-             " :foobar/my"
-             " (s/keys :req [::foo :clojure.spec.gen.alpha/bar] :req-un [:foobar/a]))\n"])
+            #?(:clj  ["(s/def :clojure.spec.gen.alpha/bar integer?)"
+                      "(s/def ::foo integer?)"
+                      "(s/def :foobar/a integer?)"
+                      "(s/def"
+                      " :foobar/my"
+                      " (s/keys :req [::foo :clojure.spec.gen.alpha/bar] :req-un [:foobar/a]))\n"]
+               :cljs ["(s/def :cljs.spec.gen.alpha/bar integer?)"
+                      "(s/def :cljs.spec.alpha/foo integer?)"
+                      "(s/def :foobar/a integer?)"
+                      "(s/def"
+                      " :foobar/my"
+                      " (s/keys"
+                      "  :req"
+                      "  [:cljs.spec.alpha/foo :cljs.spec.gen.alpha/bar] "
+                      "  :req-un "
+                      "  [:foobar/a]))\n"]))
            (with-out-str
              (pr/pprint-specs
               (pr/infer-specs [{:a 0 ::s/foo 1 ::gen/bar 2}
