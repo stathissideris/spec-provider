@@ -18,9 +18,13 @@ change, possibly flawed.
 
 This library works in both Clojure and ClojureScript.
 
+Maturity level: mature and useful. Has not reached full potential as
+some ideas are still unexplored.
+
+
 ## Usage
 
-To use this library, add this dependency to your `project.clj` file:
+To use this library, add this dependency to your Leiningen `project.clj` file:
 
 ```
 [spec-provider "0.4.14"]
