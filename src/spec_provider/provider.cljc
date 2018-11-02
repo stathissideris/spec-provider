@@ -288,7 +288,7 @@
    (let [stats (stats/collect data options)]
      (s/valid? ::stats/stats stats)
      (summarize-stats stats spec-name options))))
-(s/fdef summarize-stats
+(s/fdef infer-specs
         :args (s/cat :data (s/coll-of any?)
                      :spec-name qualified-keyword?
                      :options (s/* ::options)))
