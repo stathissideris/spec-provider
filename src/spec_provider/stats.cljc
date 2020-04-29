@@ -55,7 +55,7 @@
    inst?
    none-of-the-above?])
 
-(s/def ::distinct-values (s/* any?))
+(s/def ::distinct-values (s/coll-of any? :distinct true :kind set? :into #{}))
 (s/def ::sample-count nat-int?)
 (s/def ::min number?)
 (s/def ::max number?)

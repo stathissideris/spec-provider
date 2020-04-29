@@ -26,11 +26,11 @@
           :distinct-values           #{:c :b :a}
           :keys                      {:a #::st {:name "bar"
                                                 :sample-count 1
-                                                :distinct-values ["bar-val"]
+                                                :distinct-values #{"bar-val"}
                                                 :pred-map {string? #::st {:sample-count 1}}}
                                       :b #::st {:name "baz"
                                                 :sample-count 1
-                                                :distinct-values ["baz-val"]
+                                                :distinct-values #{"baz-val"}
                                                 :pred-map {string? #::st {:sample-count 1}}}}
           :pred-map
           {string? #::st{:sample-count 35
@@ -48,7 +48,7 @@
            :distinct-values           #{:a :b}
            :keys                      {:a #::st {:name "bar"
                                                  :sample-count 1
-                                                 :distinct-values ["bar-val"]
+                                                 :distinct-values #{"bar-val"}
                                                  :pred-map {string? #::st {:sample-count 1}}}}
            :pred-map
            {string? #::st{:sample-count 15
@@ -65,7 +65,7 @@
            :distinct-values           #{:c}
            :keys                      {:b #::st {:name "baz"
                                                  :sample-count 1
-                                                 :distinct-values ["baz-val"]
+                                                 :distinct-values #{"baz-val"}
                                                  :pred-map {string? #::st {:sample-count 1}}}}
            :pred-map
            {string? #::st{:sample-count 20
