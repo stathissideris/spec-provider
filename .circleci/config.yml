@@ -1,0 +1,10 @@
+version: 2.1
+
+jobs:
+  unit_testing:
+    docker:
+      - image: circleci/clojure:openjdk-11-lein
+    steps:
+      - run:
+          name: Unit testing
+          command: lein test
