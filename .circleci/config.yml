@@ -5,6 +5,7 @@ jobs:
     docker:
       - image: circleci/clojure:openjdk-11-lein
     steps:
+      - checkout
       - run:
           name: Unit testing
           command: lein test
