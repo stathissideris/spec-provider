@@ -8,3 +8,9 @@ jobs:
       - run:
           name: Unit testing
           command: lein test
+
+workflows:
+  version: 2
+  unit_testing:
+    jobs:
+      - unit_testing
