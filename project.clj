@@ -4,7 +4,8 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [pretty-spec "0.1.3"]
+                 [pretty-spec "0.1.4" :exclusions [fipp]]
+                 [fipp "0.6.23"]
                  [org.clojure/clojurescript "1.10.238"]]
 
   :profiles {:dev {:source-paths ["dev"]
