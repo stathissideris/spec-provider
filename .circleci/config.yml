@@ -4,8 +4,29 @@ jobs:
   unit_testing:
     docker:
       - image: circleci/clojure:openjdk-11-lein
+
+    working_directory: ~/repo
+
+    environment:
+      LEIN_ROOT: "true"
+
     steps:
       - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "project.clj" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+
+      - run: lein deps
+
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "project.clj" }}
+
       - run:
           name: Unit testing
           command: lein test
